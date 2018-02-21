@@ -1,12 +1,14 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 
 void main()
 {
-    char a;
-    int b;
+    char *a = malloc(sizeof(char) * 2);
+    char b = 'a';
 
-    int c = scanf("%i", &b);
+    a[0] = '2';
+     
 
     printf("%i", b);
 

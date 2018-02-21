@@ -23,11 +23,15 @@ char getSetMode (char gameMode);
 
 bool isEmpty (int* shipsLeft);
 
+void reset (Ship ship);
+
 int* getCoords(char setMode);
 
 int calcSize(int* coords);
 
 bool contains (Ship ship, int* shipsToSet);
+
+void showShipsToSet(int* ships);
 
 bool isAgreed(void);
 
@@ -37,7 +41,7 @@ int* getUserCoords(void);
 
 void initShips (Ship** ships);
 
-bool setShip (Ship ship, int* coords, Cell field[][SIZE]);
+bool setShip (Ship* ship, int* coords, Cell field[][SIZE]);
 
 int* getFullCoords(int coords[4]);
 

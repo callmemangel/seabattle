@@ -16,6 +16,29 @@ void startGame(Player player_1, Player player_2, char gameMode)
 
 }
 
+void drawField(Cell field[][SIZE])
+{
+    const char letters[] = "ABCDEFGHIJ";
+
+    printf("%2c", ' ');
+
+    for (int i = 0; i < 10; i++)
+        printf("%2c", letters[i]);
+
+    printf("\n");
+
+    for (int i = 0; i < 10; i++) {
+        printf("%2i", i);
+        for (int j = 0; j < 10; j++)
+            if (field[i][j].shipId != -1)
+                printf("%2c", 'I');
+            else
+                printf("%2c", '~');
+        printf("\n");    
+    }
+}
+
+
 void doShot (Player player_1, Player player_2, char gameMode)
 {
 

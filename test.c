@@ -27,6 +27,7 @@ void main(void)
     setShips(player_1.field, p1Ships, 'p');
 
 
+
     int coords[] = {2, 3, 5, 3};
     int coords2[] = {0, 0, 0, 3};
     int coords3[4];
