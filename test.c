@@ -12,6 +12,10 @@ void main(void)
 
     Player player_1;
     Player player_2;
+
+    player_1.field = mallocField(player_1.field);    
+    player_2.field = mallocField(player_2.field);    
+
     Ship p1Ships[10];
 
     for (int i = 0; i < 10; i++)
@@ -32,7 +36,7 @@ void main(void)
     int coords2[] = {0, 0, 0, 3};
     int coords3[4];
 
-    memcpy(coords3, getUserCoords(), 'p');
+//    memcpy(coords3, getUserCoords(), 'p');
     
 
 

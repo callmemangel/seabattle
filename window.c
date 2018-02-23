@@ -21,7 +21,7 @@ char** createField(char** window, const int x, const int y, const int width, con
 
     static char** field;
 
-    field = malloc(sizeof(char*) * height);
+    field = calloc(height, sizeof(char*));
 
     for (int i = 0; i < height; i++)
             field[i] = *(window + y + i) + x;
@@ -31,8 +31,10 @@ char** createField(char** window, const int x, const int y, const int width, con
 }
 
 
-void drawWindow (char** window, const int width, const int height, int option)
+void renderWindow (char** window, const int width, const int height, int option)
 {
+    system("clear");
+
     char sign = ' ';
 
     if (option == 1)
@@ -41,7 +43,7 @@ void drawWindow (char** window, const int width, const int height, int option)
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
-            if (window[i][j] == 0)
+            if (window[i][j] == 0 || window[i][j] == ' ')
                printf("%2c", sign);
             else
                printf("%2c", window[i][j]); 
@@ -50,3 +52,4 @@ void drawWindow (char** window, const int width, const int height, int option)
     }
 
 }
+

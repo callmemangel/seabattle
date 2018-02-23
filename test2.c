@@ -4,46 +4,6 @@
 #include "game.h"
 
 
-void attachField(Cell field[][SIZE], char** windowField)
-{
-    char** buff = windowField;
-    const char letters[] = "ABCDEFGHIJ";
-
-    char* buf = *windowField;
-
-    sprintf(buf, "%c", ' ');
-    buf++;
-
-    for (int i = 0; i < 10; i++) {
-        sprintf(buf, "%c", letters[i]);
-        buf++;
-    }
-
-    
-    buf = *(++buff);
-
-    for (int i = 0; i < 10; i++) {
-        
-        sprintf(buf, "%i", i);
-        buf++;
-
-        for (int j = 0; j < 10; j++)
-
-            if (field[i][j].shipId != -1) {
-
-                sprintf(buf, "%c", 'I');
-                buf++;
-            }
-
-            else {
-                sprintf(buf, "%c", '~');
-                buf++;
-            }
-        buf = *(++buff);
-    }
-}
-
-
 void main(void)
 
 {
@@ -55,7 +15,7 @@ void main(void)
     initCells(player_1.field);
     initCells(player_2.field);
 
-//    setShips(player_1.field, p1Ships, 'p');
+    setShips(player_1.field, p1Ships, 'p');
 
  
     char** window = createWindow(50, 50);
@@ -66,8 +26,6 @@ void main(void)
 
     char** windowField = createField(window, 10, 10, fieldWid, fieldH);
 
-    attachField(player_1.field, windowField);
 
     
-    drawWindow(window, 50, 50, 0);
 }

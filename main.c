@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-
+#include "window.h"
 #include "player.h"
 #include "game.h"
 #include "ships.h"
@@ -16,8 +16,15 @@ int main(void)
     Player player_1;
     Player player_2;
 
+
+    player_1.field = mallocField(player_1.field);    
+    player_2.field = mallocField(player_2.field);    
+
     Ship p1Ships[10];
     Ship p2Ships[10]; 
+
+    char** p1Window;
+    char** p2Window;
         
     while (true) { 
 
@@ -37,7 +44,6 @@ int main(void)
             
         if (!wannaRepeat())
             break;
-
 //        resetGame();
     }
 

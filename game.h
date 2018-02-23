@@ -19,20 +19,31 @@ typedef struct {
 
     char* name;
     int count;
-    Cell field[SIZE][SIZE];
+    Cell** field;
 
 } Player;
 
+void updateField(char** windowField, Cell** field);
+
+Cell** storeField (Cell** field, Cell** tmp);
+
+Cell** mallocField(Cell** field);
+
+void updateShipsInf(char** windowField, int* ships);
+
+void initField(char*** dynamicField, char** field);
+
+void initShipsInf(char*** dynamicField, char** shipsInf);
 
 void startGame (Player player_1, Player player_2, char gameMode);
 
-void initCells (Cell field[][SIZE]);
+void initCells (Cell** field);
 
 void doShot (Player player_1, Player player_2, char gameMode);
 
 int getShot (int gameMode);
 
-bool isHit (int shot, Cell field[][SIZE]);
+bool isHit (int shot, Cell** field);
 
 char* getPlayerName (char gameMode);
 
@@ -40,15 +51,17 @@ char getGameMode (void);
 
 bool wannaRepeat (void);
 
-bool checkWin (Cell field[][SIZE]);
+bool checkWin (Cell** field);
 
-void drawField (Cell field[][SIZE]);
+void packField(Cell** field, char** windowField, char opt);
 
-void drawHitField (Cell field[][SIZE]);
+void drawHitField (Cell** field);
 
 int getUserShot(void);
 
 void clearBuff(void);
+
+
 
 
 #endif

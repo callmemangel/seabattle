@@ -1,7 +1,9 @@
 #include "game.h"
 #include "machine.h"
+#include "window.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 void startGame(Player player_1, Player player_2, char gameMode)
@@ -16,26 +18,112 @@ void startGame(Player player_1, Player player_2, char gameMode)
 
 }
 
-void drawField(Cell field[][SIZE])
+void updateField(char** windowField, Cell** field)
 {
-    const char letters[] = "ABCDEFGHIJ";
+    for (int i = 0; i < SIZE; i++) {             
+       for (int j = 0; j < SIZE; j++) {        
+                                          
+            Cell cell = field[i][j];
 
-    printf("%2c", ' ');
+            if (cell.shipId != -1 && !cell.isHitted) 
+                windowField[i][j] = 'I';
 
-    for (int i = 0; i < 10; i++)
-        printf("%2c", letters[i]);
+            else if (cell.shipId != -1 && cell.isHitted)
+                windowField[i][j] = 'X';
 
-    printf("\n");
+            else if (cell.isHitted)
+                windowField[i][j] = 'O';
 
-    for (int i = 0; i < 10; i++) {
-        printf("%2i", i);
-        for (int j = 0; j < 10; j++)
-            if (field[i][j].shipId != -1)
-                printf("%2c", 'I');
             else
-                printf("%2c", '~');
-        printf("\n");    
+                windowField[i][j] = '~';
+       }
     }
+}
+
+Cell** storeField (Cell** field, Cell** tmp)
+{
+    tmp = mallocField(tmp);
+
+    for (int i = 0; i < SIZE; i++)
+        for (int j = 0; j < SIZE; j++)
+            tmp[i][j] = field[i][j];
+
+    return tmp;
+
+}
+
+Cell** mallocField (Cell** field)
+{
+    field = malloc(sizeof(Cell*) * SIZE);
+
+    for (int i = 0; i < SIZE; i++)
+        field[i] = malloc(sizeof(Cell) * SIZE);
+
+    return field;
+}
+
+void updateShipsInf(char** windowField, int* ships)
+{
+    sprintf(*windowField, "%3i%3i%3i%3i", ships[0], ships[1], ships[2], ships[3]);  
+}
+
+void initField(char*** dynamicField, char** field)
+{
+     const char letters[] = "ABCDEFGHIJ";
+     char** buff = field;
+     char* buf = *field;
+
+     *buf++ = ' ';
+
+     for (int i = 0; i < 10; i++)
+         *buf++ = letters[i];
+
+     buf = *++buff;
+
+     for (int i = 0; i < 10; i++) {
+
+         *buf++ = i + '0';
+
+          for (int j = 0; j < 10; j++)
+              *buf++ = '~';
+
+          buf = *++buff;
+     }
+
+     *dynamicField = createField(field, 1, 1, 10, 10);
+}
+
+void initShipsInf(char*** dynamicField, char** shipsInf)
+{
+    char** buff = shipsInf;
+    char* buf = *shipsInf;
+
+    sprintf(buf, "     SHIPS    ");
+    buf = *++buff;
+
+    sprintf(buf, "              ");
+    buf = *++buff;
+
+    sprintf(buf, "  4  3  2  1  ");
+    buf = *++buff; 
+
+    sprintf(buf, "              ");
+    buf = *++buff; 
+
+    sprintf(buf, "  I  I  I  I  ");
+    buf = *++buff; 
+
+    sprintf(buf, "     I  I  I  ");
+    buf = *++buff; 
+
+    sprintf(buf, "        I  I  ");
+    buf = *++buff; 
+
+    sprintf(buf, "           I  ");
+    buf = *++buff;
+
+    *dynamicField = createField(shipsInf, 0, 2, 14, 1);
+
 }
 
 
@@ -87,7 +175,7 @@ int getShot(int gameMode)
 
 //}
 
-bool isHit (int shot, Cell field[][SIZE])
+bool isHit (int shot, Cell** field)
 {
 
 
@@ -147,7 +235,7 @@ bool wannaRepeat(void)
         return false;
 }
 
-void initCells (Cell field[][SIZE])
+void initCells (Cell** field)
 {
     for (int i = 0; i < SIZE; i++)
         for (int j = 0; j < SIZE; j++)
@@ -159,9 +247,9 @@ void initCells (Cell field[][SIZE])
         }
 }
 
-bool checkWin (Cell field[][SIZE]) {}
+bool checkWin (Cell** field) {}
 
-void drawHitField(Cell field[][SIZE]) {}
+void drawHitField(Cell** field) {}
 
 int getUserShot() {}
 

@@ -13,4 +13,8 @@ int getHardShot(void);
 
 int* getMachineCoords(void);
 
+void rearrangeCoords(int coords[4]);
+
+void swap(int* a, int* b);
+
 #endif

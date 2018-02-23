@@ -1,5 +1,8 @@
 #include "machine.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include "ships.h"
+
 
 
 int getMachineShot()
@@ -69,5 +72,56 @@ int getHardShot()
 
 int* getMachineCoords(void)
 {
-    "TODO";
+    static int coords[4];
+
+    int sizes[8] = {-3, -2, -1, 0, 0, 1, 2, 3};
+
+    coords[0] = rand() % 10; //3 x
+    coords[1] = rand() % 10; //7 y
+    
+    do {
+
+        int size = sizes[rand() % 8]; 
+        
+        int randNum = rand() % 2;
+
+        coords[randNum + 2] = coords[randNum] + size;
+
+        coords[(randNum + 1) % 2 + 2] = coords[(randNum + 1) % 2];
+
+   
+    } while(!validCoords(coords));
+
+ 
+    rearrangeCoords(coords);
+
+    return coords;
+
+}
+
+void rearrangeCoords(int coords[4])
+{
+    if (coords[0] == coords[2])
+    {
+        if (coords[1] > coords[3])
+        {
+            swap(&coords[1], &coords[3]);
+        } 
+    
+    }
+
+    if (coords[1] == coords[3])
+        if (coords[0] > coords[2])
+            swap(&coords[0], &coords[2]);
+
+}
+
+
+void swap(int *a, int* b)
+{
+    int tmp = *a;
+
+    *a = *b;
+    *b = tmp;
+
 }

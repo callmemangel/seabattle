@@ -17,7 +17,7 @@ typedef struct {
 } Ship;
 
 
-void setShips (Cell field[][SIZE], Ship* ships, char gameMode);
+void setShips (Cell** field, Ship* ships, char gameMode);
 
 char getSetMode (char gameMode);
 
@@ -25,13 +25,13 @@ bool isEmpty (int* shipsLeft);
 
 void reset (Ship ship);
 
-int* getCoords(char setMode);
+int* getCoords(char setMode, int* coords);
 
 int calcSize(int* coords);
 
-bool contains (Ship ship, int* shipsToSet);
+int calcDist(int x1, int y1, int x2, int y2);
 
-void showShipsToSet(int* ships);
+bool contains (Ship ship, int* shipsToSet);
 
 bool isAgreed(void);
 
@@ -39,12 +39,18 @@ void delete (Ship ship, int* shipsToSet);
 
 int* getUserCoords(void);
 
-void initShips (Ship** ships);
-
-bool setShip (Ship* ship, int* coords, Cell field[][SIZE]);
+void setShip (Ship* ship, int* coords, Cell** field);
 
 int* getFullCoords(int coords[4]);
 
-bool checkCoords (int coords[4]);
+bool checkCoords (int coords[4], Cell** field);
+
+bool validCoords(int coords[4]);
+
+bool checkSize (int coords[4]);
+
+bool checkEnv (int coords[4], Cell** field);
+
+void initShip (Ship* ship, const int id, int* coords);
 
 #endif

@@ -1,10 +1,10 @@
-#ifndef WINDOW_H 
-#define WINDOW_H
+#ifndef WINDOW_HH 
+#define WINDOW_HH
 
 char** createWindow(const int width, const int height);
 
-char** createField(char** window, const int x, const int y, const int height, const int width);
+char** createField(char** window, const int x, const int y, const int width, const int height);
 
-void drawWindow(char** window, const int width, const int height, int option);
+void renderWindow(char** window, const int width, const int height, int option);
 
 #endif

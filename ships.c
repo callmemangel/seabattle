@@ -1,4 +1,5 @@
 #include "machine.h"
+#include "window.h"
 #include "ships.h"
 #include "game.h"
 #include <math.h>
@@ -6,71 +7,103 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 #include <string.h>
 
+#define WINDOW_W 30 
+#define WINDOW_H 15 
 
+#define GAME_FIELD_W 11
+#define GAME_FIELD_H 11
 
-void setShips (Cell field[][SIZE], Ship* ships, char gameMode)
+#define SHIPS_INF_W 14
+#define SHIPS_INF_H 8
+
+#define RENDER_OPT 0
+
+void setShips (Cell** field, Ship* ships, char gameMode)
 {
+
+    char** window    = createWindow(WINDOW_W, WINDOW_H);
+    char** gameField = createField(window, 2, 2, GAME_FIELD_W, GAME_FIELD_H);
+    char** shipsInf  = createField(window, 15, 2, SHIPS_INF_W, SHIPS_INF_H);
+
+    char** dynamicField;
+    char** dynamicShipsInf;
+
+    Cell** prevField;
+    
     int shipsToSet[] = {4, 3, 2, 1};
 
     char setMode = getSetMode(gameMode);
 
-    int* coords;
-
     int currShip = 0;
+
+    initField(&dynamicField, gameField);
+    initShipsInf(&dynamicShipsInf, shipsInf);
+
+
+    renderWindow(window, WINDOW_W, WINDOW_H, RENDER_OPT);
+
+
+    srand(time(NULL));
 
     while (!isEmpty (shipsToSet)) {
 
-        system("clear");
-        showShipsToSet(shipsToSet);
-        drawField(field);
 
-        Ship ship = ships[currShip];
 
-        coords = getCoords(setMode);   
+        int* coords = getCoords(setMode, coords);   
 
-        ship.id = currShip;
-        ship.size = calcSize(coords);
-        ship.isKilled = false;
+        if (!checkCoords(coords, field))
+            continue; 
 
-        if(!contains(ship, shipsToSet))
+
+        renderWindow(window, WINDOW_W, WINDOW_H, RENDER_OPT);
+
+        Ship ship   = ships[currShip];
+        prevField   = storeField(field, prevField);
+
+        initShip (&ship, currShip, coords);
+
+        if (!contains(ship, shipsToSet))
             continue;
 
-        if(!setShip(&ship, coords, field))
-            continue;
+        setShip(&ship, coords, field);
+           
+        
+        updateField(dynamicField, field);
+        
+        renderWindow(window, WINDOW_W, WINDOW_H, RENDER_OPT);
 
-        system("clear");
-        showShipsToSet(shipsToSet);
-        drawField(field);
+        if (!isAgreed()) {
 
-        if(!isAgreed()) {
             reset(ship);
+            updateField(dynamicField, prevField);
+            renderWindow(window, WINDOW_W, WINDOW_H, RENDER_OPT);
             continue;
         }
 
         delete(ship, shipsToSet);
+        updateShipsInf(dynamicShipsInf, shipsToSet);
+
+        renderWindow(window, WINDOW_W, WINDOW_H, RENDER_OPT);
+
         currShip++;
     }
 }
 
+void initShip (Ship* ship, const int id, int* coords)
+{
+    ship -> id = id;
+    ship -> size = calcSize (coords);
+    ship -> isKilled = false; 
+    ship -> cells = malloc (sizeof(Cell*) * ship -> size);
+}
+    
 void reset(Ship ship)
 {
    for (int i = 0; i < ship.size; i++)
        ship.cells[i] -> shipId = -1; 
-}
-
-void showShipsToSet(int* ships)
-{
-
-    printf("    SHIPS TO SET      \n");
-    printf("----------------------\n");
-    printf("%4i%4i%4i%4i\n", ships[0], ships[1], ships[2], ships[3]);
-    printf("----------------------\n");
-    printf("%4c%4c%4c%4c\n", '^', '^', '^', '^');
-    printf("%8c%4c%4c\n", 'O', 'O', 'O');
-    printf("%12c%4c\n", 'O', 'O');
-    printf("%16c\n\n\n", 'O');
 }
 
 char getSetMode (char gameMode)
@@ -88,40 +121,49 @@ char getSetMode (char gameMode)
                "c - CUSTOM\n");
 
         setMode = getchar(); 
-        clearBuff();
+
+        if (setMode != '\n')
+            clearBuff();
 
     } while (setMode != 'a' && setMode != 'c');
-    printf("ITS OK\n");
+
     return setMode;
 }
 
 bool isEmpty (int* shipsLeft)
 {
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 4; i++)
         if (shipsLeft[i] > 0)
             return false;
     
     return true;
 }
 
-int* getCoords(char setMode)
+int* getCoords(char setMode, int* coords)
 {
-    static int* coords;
-
     if (setMode == 'a')
         coords = getMachineCoords();
     else
         coords = getUserCoords();
-    printf("BEFORE\n");
+
     return coords;
 }
 
 int calcSize(int coords[4]) 
 {
-    int xDif = coords[2] - coords[0];
-    int yDif = coords[3] - coords[1];
+    int dist = calcDist(coords[0], coords[1], coords[2], coords[3]);
 
-    return sqrt (xDif * xDif + yDif * yDif) + 1; 
+    int size = dist + 2;
+
+    return size;
+}
+
+int calcDist(int x1, int y1, int x2, int y2)
+{
+    int xDif = x2 - x1;
+    int yDif = y2 - y1;
+
+    return sqrt (xDif * xDif + yDif * yDif) - 1; 
 }
 
 bool contains (Ship ship, int* shipsToSet)
@@ -141,6 +183,12 @@ bool isAgreed(void)
     
     do {
         answ = getchar();
+
+        if (answ == '\n') {
+            answ = 'y';
+            break; 
+        }
+
         clearBuff();
     } 
     while (answ != 'y' && answ != 'n' && answ != 'Y' && answ != 'N');
@@ -158,24 +206,22 @@ void delete (Ship ship, int* shipsToSet)
     shipsToSet[ship.size - 1]--;
 }
 
-bool setShip (Ship* ship, int* coords, Cell field[][SIZE])
+void setShip (Ship* ship, int* coords, Cell** field)
 {
-    ship -> cells = malloc (sizeof(Cell*) * ship -> size);
 
     int* fullCoords = getFullCoords(coords);
     
-    for (int i = 0; i / 2 < ship -> size; i += 2)
+    for (int currCell = 0, coordPos = 0; currCell < ship -> size; currCell++, coordPos += 2)
     {
-        ship -> cells[i / 2] = malloc(sizeof(Cell));
+        ship -> cells[currCell] = malloc(sizeof(Cell));
 
-        ship -> cells[i / 2] = &field[ fullCoords[i + 1] ][ fullCoords[i] ];
+        int fx = fullCoords[coordPos];
+        int fy = fullCoords[coordPos + 1];
 
-        if (ship -> cells[i / 2] -> shipId != -1)
-            return false;
+        ship -> cells[currCell] = &field [fy][fx];
 
-        ship -> cells[i / 2] -> shipId = ship -> id; 
+        ship -> cells[currCell] -> shipId = ship -> id; 
     }  
-    return true;
 }
 
 int* getUserCoords()
@@ -191,26 +237,18 @@ int* getUserCoords()
 
         clearBuff();
 
-        printf("%c,%i\n", coords[0], coords[1]);
-
-        
-        
         printf("Please input your bottom rigth coords: ");
 
         coords[2] = getchar();
         coords[3] = getchar() - '0';
         clearBuff();
 
-        printf("%c,%i\n", coords[2], coords[3]);
-
-
         coords[0] = toupper(coords[0]) - 65;
         coords[2] = toupper(coords[2]) - 65;
 
-    } while (coords[0] > 'j' || coords[0] < 0 || coords[2] > 'j' || coords[2] < 0 ||
-             coords[1] > 9   || coords[1] < 0 || coords[3] > 9   || coords[3] < 0 ||
-             !checkCoords(coords)); 
-    
+    } while (!validCoords(coords));
+              
+     
     return coords;
 }
 
@@ -219,10 +257,6 @@ int* getFullCoords(int coords[4])
     int size = calcSize(coords); 
 
     static int* fullCoords;
-
-    printf("________COOORDS_________\n");
-    printf("%i, %i, %i, %i\n", coords[0], coords[1], coords[2], coords[3]);
-    printf("________END_____________\n");
 
     fullCoords = malloc(sizeof(int) * size * 2);
 
@@ -242,22 +276,85 @@ int* getFullCoords(int coords[4])
             fullCoords[i + 1] = coords[1];
         }
     }
-    printf("________COOORDS_________\n");
-    printf("%i, %i\n", fullCoords[0], fullCoords[1]);
-    printf("________END_____________\n");
-
 
     return fullCoords;
 }
 
-bool checkCoords(int coords[4])
+
+
+bool checkCoords(int coords[4], Cell** field)
 {
-    if (coords[0] == coords[2] && abs (coords[1] - coords[3] - 1) > 4)
+    if (!checkSize (coords))
         return false;
-    else if (coords[1] == coords[3] && abs (coords[0] - coords[2] - 1) > 4)
+
+    if(!checkEnv (coords, field))
         return false;
-    else if (coords[0] != coords[2] && coords[1] != coords[3])
-        return false;
-    
+
     return true;
+}
+
+bool validCoords(int coords[4])
+{
+    
+   if (coords[0] > 9   || coords[0] < 0 || coords[2] > 9   || coords[2] < 0 ||
+       coords[1] > 9   || coords[1] < 0 || coords[3] > 9   || coords[3] < 0 )
+   {
+            return false;
+   }
+
+   return true;
+}
+
+bool checkSize (int coords[4])
+{
+    int x1 = coords[0];
+    int y1 = coords[1];
+    int x2 = coords[2];
+    int y2 = coords[3];
+
+    if (x1 == x2 && abs (y1 - y2 - 1) > 4)
+        return false;
+
+    else if (y1 == y2 && abs (x1 - x2 - 1) > 4)
+        return false;
+
+    else if (x1 != x2 && y1 != y2)
+        return false;
+
+    else
+        return true;
+
+}
+
+bool checkEnv(int coords[4], Cell** field)
+{
+    int checkArea[4];
+
+    int x1 = coords[0];
+    int y1 = coords[1];
+    int x2 = coords[2];
+    int y2 = coords[3];
+
+
+    checkArea[0] = x1 - 1;
+    checkArea[1] = y1 - 1;
+    checkArea[2] = x2 + 1;
+    checkArea[3] = y2 + 1;
+
+    for (int i = checkArea[1]; i <= checkArea[3]; i++) {
+
+        for (int j = checkArea[0]; j <= checkArea[2]; j++) {
+
+            if (i < 0 || j < 0 || i > 9 || j > 9){
+               continue;
+            }
+
+            if (field[i][j].shipId != -1)
+               return false; 
+        }
+            
+    }
+
+    return true;
+
 }
