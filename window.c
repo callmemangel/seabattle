@@ -34,7 +34,6 @@ char** createField(char** window, const int x, const int y, const int width, con
 void renderWindow (char** window, const int width, const int height, int option)
 {
     system("clear");
-
     char sign = ' ';
 
     if (option == 1)

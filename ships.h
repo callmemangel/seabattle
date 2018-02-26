@@ -3,23 +3,12 @@
 #define SHIPS_H
 
 #include <stdbool.h>
-#include "game.h"
-
-typedef struct {
-
-    unsigned short id;
-    unsigned short size;
-
-    Cell** cells;
-
-    bool isKilled;
-
-} Ship;
+#include "structs.h"
 
 
-void setShips (Cell** field, Ship* ships, char gameMode);
+void setShips (Player* player, char gameMode);
 
-char getSetMode (char gameMode);
+char getSetMode (char* name, char gameMode);
 
 bool isEmpty (int* shipsLeft);
 
@@ -45,7 +34,7 @@ int* getFullCoords(int coords[4]);
 
 bool checkCoords (int coords[4], Cell** field);
 
-bool validCoords(int coords[4]);
+bool validCoords(int coords[4], int number);
 
 bool checkSize (int coords[4]);
 

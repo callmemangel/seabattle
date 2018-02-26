@@ -1,26 +1,31 @@
 #include "machine.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include "game.h"
 #include "ships.h"
+#include "time.h"
 
 
 
-int getMachineShot()
+int* getMachineShot(void)
 {
     static int machineLvl = -1;
 
     if (machineLvl == -1)
         machineLvl = getMachineLvl();
 
-    int shot;
+    int* shot;
 
-    if (machineLvl == 1)
+    if (machineLvl == 0)
         shot = getEazyShot();
-    else if (machineLvl == 2) 
+    else if (machineLvl == 1) 
         shot = getMidShot();
     else
         shot = getHardShot();
 
+    sleep(1);
+    printf("BEFORE RETURN\n");
     return shot;
 }
 
@@ -29,13 +34,15 @@ int getMachineLvl(void)
     int lvl;
 
     printf("Choose lvl of hardness\n"
-            "0 - eazy"
-            "1 - middle"
+            "0 - eazy\n"
+            "1 - middle\n"
             "2 - hard\n");
 
     do {
 
-        scanf("%i", lvl);
+        lvl = getchar() - '0';
+        if (lvl != '\n')
+            clearBuff();
 
     } while (lvl != 0 && lvl != 1 && lvl != 2);
 
@@ -43,25 +50,37 @@ int getMachineLvl(void)
 
 }
 
-int getEazyShot()
+int* getEazyShot()
 {
+
+    static int shot[2];
+    
+    srand(time(NULL));
+
+    int x = rand() % 10;
+    int y = rand() % 10;
+
+    shot[0] = x;
+    shot[1] = y;
+
+
+    printf("MACHINE x = %i\n", x);
+    printf("MACHINE y = %i\n", y);
+
+    return shot;
+}
+
+
+int* getMidShot()
+{
+
 
 
 
     return 0;
 }
 
-
-int getMidShot()
-{
-
-
-
-
-    return 0;
-}
-
-int getHardShot()
+int* getHardShot()
 {
 
 
@@ -90,7 +109,7 @@ int* getMachineCoords(void)
         coords[(randNum + 1) % 2 + 2] = coords[(randNum + 1) % 2];
 
    
-    } while(!validCoords(coords));
+    } while(!validCoords(coords, 4));
 
  
     rearrangeCoords(coords);

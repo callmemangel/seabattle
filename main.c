@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include "window.h"
-#include "player.h"
-#include "game.h"
 #include "ships.h"
+#include "game.h"
 #include "machine.h"
 
-
+//TODO create menu 
 
 int main(void)
 {
@@ -20,27 +20,45 @@ int main(void)
     player_1.field = mallocField(player_1.field);    
     player_2.field = mallocField(player_2.field);    
 
-    Ship p1Ships[10];
-    Ship p2Ships[10]; 
-
-    char** p1Window;
-    char** p2Window;
         
     while (true) { 
 
+        system("clear");
+
         gameMode = getGameMode();
 
-        player_1.name = getPlayerName(gameMode);
-        player_2.name = getPlayerName(gameMode); 
+
+        system("clear");
+
+        printf("Player1 name: ");
+        getPlayerName(player_1.name, 'p');
+
+        if (gameMode == 'p') {
+            printf("Player2 name: ");
+            getPlayerName(player_2.name, 'p'); 
+        }
+        else
+            getPlayerName(player_2.name, 'a');
+
 
         initCells (player_1.field);
         initCells (player_2.field);
 
-          
-        setShips(player_1.field, p1Ships, gameMode);
-        setShips(player_2.field, p2Ships, gameMode);
+        setShipsInf(player_1.shipsInf);
+        setShipsInf(player_2.shipsInf);
 
-        startGame(player_1, player_2, gameMode);
+        setShips(&player_1, 'p');
+        if (gameMode == 'm')
+            setShips(&player_2, 'm');
+        else
+            setShips(&player_2, 'p');
+
+
+        setShipsInf(player_1.shipsInf);
+        setShipsInf(player_2.shipsInf);
+
+
+        startGame(&player_1, &player_2, gameMode);
             
         if (!wannaRepeat())
             break;

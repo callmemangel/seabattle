@@ -21,72 +21,67 @@
 
 #define RENDER_OPT 0
 
-void setShips (Cell** field, Ship* ships, char gameMode)
+void setShips (Player* player, char gameMode)
 {
 
-    char** window    = createWindow(WINDOW_W, WINDOW_H);
-    char** gameField = createField(window, 2, 2, GAME_FIELD_W, GAME_FIELD_H);
-    char** shipsInf  = createField(window, 15, 2, SHIPS_INF_W, SHIPS_INF_H);
+    GameWindow window;
 
-    char** dynamicField;
-    char** dynamicShipsInf;
+    window.mainWindow = createWindow(WINDOW_W, WINDOW_H);
+    window.gameField  = createField(window.mainWindow, 2, 2, GAME_FIELD_W, GAME_FIELD_H);
+    window.infoField  = createField(window.mainWindow, 15, 2, SHIPS_INF_W, SHIPS_INF_H);
 
     Cell** prevField;
-    
-    int shipsToSet[] = {4, 3, 2, 1};
 
-    char setMode = getSetMode(gameMode);
+    system("clear");
+    char setMode = getSetMode(player -> name, gameMode);
 
     int currShip = 0;
 
-    initField(&dynamicField, gameField);
-    initShipsInf(&dynamicShipsInf, shipsInf);
+    initField(&window.dynamicField, window.gameField);
+    initShipsInf(&window.dynamicInf, window.infoField);
 
 
-    renderWindow(window, WINDOW_W, WINDOW_H, RENDER_OPT);
+    renderWindow(window.mainWindow, WINDOW_W, WINDOW_H, RENDER_OPT);
 
 
     srand(time(NULL));
 
-    while (!isEmpty (shipsToSet)) {
-
-
+    while (!isEmpty (player -> shipsInf)) {
 
         int* coords = getCoords(setMode, coords);   
 
-        if (!checkCoords(coords, field))
+        if (!checkCoords(coords, player -> field))
             continue; 
 
+        Ship* ship   = &player -> ships[currShip];
+        prevField   = storeField(player -> field, prevField);
 
-        renderWindow(window, WINDOW_W, WINDOW_H, RENDER_OPT);
+        initShip (ship, currShip, coords);
 
-        Ship ship   = ships[currShip];
-        prevField   = storeField(field, prevField);
-
-        initShip (&ship, currShip, coords);
-
-        if (!contains(ship, shipsToSet))
+        if (!contains(*ship, player -> shipsInf))
             continue;
 
-        setShip(&ship, coords, field);
-           
+        renderWindow(window.mainWindow, WINDOW_W, WINDOW_H, RENDER_OPT);
+
+        setShip(ship, coords, player -> field);
         
-        updateField(dynamicField, field);
+        updateField(window.dynamicField, player -> field, false);
         
-        renderWindow(window, WINDOW_W, WINDOW_H, RENDER_OPT);
+        renderWindow(window.mainWindow, WINDOW_W, WINDOW_H, RENDER_OPT);
 
-        if (!isAgreed()) {
+        if (gameMode == 'p')
+            if (!isAgreed()) {
 
-            reset(ship);
-            updateField(dynamicField, prevField);
-            renderWindow(window, WINDOW_W, WINDOW_H, RENDER_OPT);
-            continue;
-        }
+                reset(*ship);
+                updateField(window.dynamicField, prevField, false);
+                renderWindow(window.mainWindow, WINDOW_W, WINDOW_H, RENDER_OPT);
+                continue;
+            }
 
-        delete(ship, shipsToSet);
-        updateShipsInf(dynamicShipsInf, shipsToSet);
+        delete(*ship, player -> shipsInf);
+        updateShipsInf(window.dynamicInf, player -> shipsInf);
 
-        renderWindow(window, WINDOW_W, WINDOW_H, RENDER_OPT);
+        renderWindow(window.mainWindow, WINDOW_W, WINDOW_H, RENDER_OPT);
 
         currShip++;
     }
@@ -96,6 +91,7 @@ void initShip (Ship* ship, const int id, int* coords)
 {
     ship -> id = id;
     ship -> size = calcSize (coords);
+    printf("SHIP WHERE ID = %i SIZE = %i\n", ship -> id, ship -> size);
     ship -> isKilled = false; 
     ship -> cells = malloc (sizeof(Cell*) * ship -> size);
 }
@@ -106,7 +102,7 @@ void reset(Ship ship)
        ship.cells[i] -> shipId = -1; 
 }
 
-char getSetMode (char gameMode)
+char getSetMode (char* name, char gameMode)
 {
     char setMode;
 
@@ -116,9 +112,9 @@ char getSetMode (char gameMode)
     } 
 
     do {
-        printf("SHIPS PLACEMENT\n"
+        printf("%s SHIPS PLACEMENT\n"
                "a - AUTO\n" 
-               "c - CUSTOM\n");
+               "c - CUSTOM\n", name);
 
         setMode = getchar(); 
 
@@ -204,6 +200,7 @@ bool isAgreed(void)
 void delete (Ship ship, int* shipsToSet)
 {
     shipsToSet[ship.size - 1]--;
+    printf("SHIP of size %i DELETED\n", ship.size);
 }
 
 void setShip (Ship* ship, int* coords, Cell** field)
@@ -246,7 +243,7 @@ int* getUserCoords()
         coords[0] = toupper(coords[0]) - 65;
         coords[2] = toupper(coords[2]) - 65;
 
-    } while (!validCoords(coords));
+    } while (!validCoords(coords, 4));
               
      
     return coords;
@@ -293,16 +290,19 @@ bool checkCoords(int coords[4], Cell** field)
     return true;
 }
 
-bool validCoords(int coords[4])
+bool validCoords(int* coords, int number)
 {
-    
-   if (coords[0] > 9   || coords[0] < 0 || coords[2] > 9   || coords[2] < 0 ||
-       coords[1] > 9   || coords[1] < 0 || coords[3] > 9   || coords[3] < 0 )
-   {
+   for (int i = 0; i < number; i++) {
+        if (coords[i] > 9 || coords[i] < 0)  {
+            printf("coords[%i] = %i\n", i, coords[i]);
+            printf("FALSE\n");
             return false;
-   }
+        }
 
+   }
+   printf("TRUE\n");
    return true;
+   
 }
 
 bool checkSize (int coords[4])
