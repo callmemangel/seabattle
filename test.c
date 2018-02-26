@@ -58,15 +58,15 @@ char getArrowVector(void)
 void main(void)
 
 {
-    char** window = createWindow(WINDOW_W,WINDOW_H);
-    char** canvas = createField(window, 0, 2, CANVAS_W, CANVAS_H);
+    Window window = createWindow(WINDOW_W, WINDOW_H);
 
-    sprintf(canvas[4] + 5, "SOME TEXT");
+    Window canvas = createField (window, 0, 0, CANVAS_W, CANVAS_H);
+
+    sprintf(canvas.field[4] + 5, "SOME TEXT");
 
     Cursor cursor;
+    initCursorOnWindow(&cursor, canvas, CANVAS_W, CANVAS_H, 'O', 'r');
 
-    initCursorOnField(&cursor, canvas, CANVAS_W, CANVAS_H, 'O');
-    
 
     renderCursor(cursor);
     renderWindow(window, WINDOW_W, WINDOW_H, 0);

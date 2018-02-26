@@ -5,6 +5,7 @@
 #define NAME_LENGTH 10
 
 #include <stdbool.h>
+#include "window.h"
 
 typedef struct {
 
@@ -41,7 +42,7 @@ typedef struct {
 
 typedef struct {
 
-    char** mainWindow;
+    Window mainWindow;
 
     char** gameField;
     char** infoField;
@@ -53,21 +54,6 @@ typedef struct {
 
 } GameWindow;
 
-typedef struct {
 
-    int curr_x;
-    int curr_y;
-
-    int prev_x;
-    int prev_y;
-    char prev_value;
-
-    char** window;
-    int window_w;
-    int window_h;
-
-    char sign;    
-
-} Cursor;
 
 #endif
