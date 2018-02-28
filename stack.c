@@ -13,7 +13,6 @@ void push(Buffer a, int value)
 
 int pop(Buffer a)
 {
-
     int value = a.buffer[a.size - 1];
 
     for (int i = a.size - 1; i >= 0; i--)
@@ -28,7 +27,7 @@ void print(Buffer a)
         printf("%i\n", a.buffer[i]);
 }
 
-bool isEmpty(Buffer a)
+bool isEmptyBuffer(Buffer a)
 {
     for (int i = 0; i < a.size - 1; i++)
         if (a.buffer[i] != 0)

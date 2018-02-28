@@ -12,8 +12,9 @@ typedef struct {
 
     int prev_x;
     int prev_y;
-    char prev_value;
-    char prev_color;
+
+    char* stored_values;
+    char* stored_colors;
 
     Buffer drawCoords;
 
@@ -22,8 +23,14 @@ typedef struct {
     char sign;    
     char color;
 
+    int size;
+
 } Cursor;
 
+
+void freeCursor(Cursor cursor);
+
+char getArrowVector(void);
 
 void renderCursor(const Cursor cursor);
 
@@ -35,7 +42,7 @@ void moveCursor(Cursor* cursor, char vector, bool start_draw);
 
 void initCursorOnWindow(Cursor* cursor, const Window window, const char curs_sign, const char curs_color);
 
-void deleteLastSymbol(Cursor cursor);
+void deleteLastSymbol(Cursor* cursor);
 
 char listenInput(void);
 

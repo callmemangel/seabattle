@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "window.h"
 
 
@@ -46,27 +47,37 @@ char* getColor(char color)
 {
     static char* ansi_color;
 
-    ansi_color = malloc(sizeof(char) * 5);
+    ansi_color = malloc(sizeof(char) * 6);
+    int bold;
+
+    if (isupper(color) != 0) {
+        bold = 3; 
+    }
+    else {
+        bold = 2;
+        color = toupper(color); 
+    }
+        
 
     int color_num;
 
     switch (color) {
-        case 'r':
+        case 'R':
             color_num = 31;
             break;
-        case 'g':
+        case 'G':
             color_num = 32;
             break;
-        case 'y':
+        case 'Y':
             color_num = 33;
             break;
-        case 'b':
+        case 'B':
             color_num = 34;
             break;
-        case 'p':
+        case 'P':
             color_num = 35;
             break;
-        case 'c':
+        case 'C':
             color_num = 36;
             break;
         default:
@@ -74,7 +85,7 @@ char* getColor(char color)
             break;
     }
      
-    sprintf(ansi_color, "\033[%im", color_num);
+    sprintf(ansi_color, "\033[%i;%im", color_num, bold);
 
     return ansi_color;
 
@@ -102,6 +113,8 @@ void renderWindow (Window window, int option)
                printf("%2c", sign);
             else
                printf("%s%2c\033[0m", ansi_color, window.field[i][j]); 
+
+            free(ansi_color);
         }
 
         printf("\n");

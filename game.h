@@ -6,13 +6,15 @@
 #include <stdbool.h>
 #include "structs.h"
 
-void updateField(char** windowField, Cell** field, bool hideShips);
+void initGameField(GameWindow* window);
 
-void printText(char** field, char* text);
+void updateShipsField(Window ships_field, Cell** field, bool hide_ships);
 
-void clearTextField(char** textField);
+void clearTextField(Window text_field);
 
-void setShipsInf(int* shipsInf);
+void printToTextField(Window text_field, const char* text, char color);
+
+void setShipsLeft(int* ships_left);
 
 int getShipId (int* shot, Cell** field);
 
@@ -20,19 +22,19 @@ Cell** storeField (Cell** field, Cell** tmp);
 
 Cell** mallocField(Cell** field);
 
-void updateShipsInf(char** windowField, int* ships);
+void updateShipsLeft(Window ships_left, int* ships);
 
-void initField(char*** dynamicField, char** field);
+Window initMapField(Window game_field);
 
-void initShipsInf(char*** dynamicField, char** shipsInf);
+Window initInfoField(Window info_field);
 
-void startGame (Player* player_1, Player* player_2, char gameMode);
+void startGame (Player* player_1, Player* player_2);
 
 void initCells (Cell** field);
 
-void doShot (Player* player_1, Player* player_2, char shotMode, GameWindow window);
+void doShot (Player* player_1, Player* player_2, GameWindow window);
 
-int* getShot (char shotMode);
+int* getShot (GameWindow window, char shot_mode);
 
 bool isHit (int* shot, Cell** field);
 
@@ -46,11 +48,13 @@ bool wannaRepeat (void);
 
 bool checkWin (Cell** field);
 
-void packField(Cell** field, char** windowField, char opt);
+//void packField(Cell** field, char** windowField, char opt);
 
 void setEnvire(Ship ship, Cell** field);
 
 int* getUserShot(void);
+
+int* getCursorShot(GameWindow window);
 
 void clearBuff(void);
 

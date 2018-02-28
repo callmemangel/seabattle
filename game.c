@@ -1,4 +1,5 @@
 #include "game.h"
+#include "cursor.h"
 #include "structs.h"
 #include "machine.h"
 #include "window.h"
@@ -10,88 +11,117 @@
 #include <ctype.h>
 #include <unistd.h>
 
-#define WINDOW_W 30
+#define WINDOW_W 30 
 #define WINDOW_H 20 
 
-#define FIELD_W 11
-#define FIELD_H 11
+#define GAME_FIELD_W 11
+#define GAME_FIELD_H 11
 
-#define TEXT_W 18 
-#define TEXT_H 1
+#define SHIPS_INF_W 14
+#define SHIPS_INF_H 8
 
-#define INFO_W 14
-#define INFO_H 8
+#define TEXTFIELD_W 10
+#define TEXTFIELD_H 1 
 
 #define RENDER_OPT 0
 
 #define SLEEP_TIME 2
 
+void clearTextField(Window text_field)
+{
+    for (int i = 0; i < text_field.height; i++)
+        for (int j = 0; j < text_field.width; j++)
+            text_field.field[i][j] = ' ';
 
-void startGame(Player* player_1, Player* player_2, char gameMode)
+}
+
+void printToTextField(Window text_field, const char* text, char color)
+{
+    clearTextField(text_field);
+
+    for (int i = 0; i < text_field.height; i++)
+        for (int j = 0; j < text_field.width; j++) {
+            if (i * text_field.height + j == strlen(text))
+                return;
+
+            text_field.field[i][j] = text[i * text_field.height + j];
+            text_field.color_map[i][j] = color;
+        }
+
+}
+
+
+void startGame(Player* player_1, Player* player_2)
 {
     
    GameWindow window;
 
-   window.mainWindow = createWindow(WINDOW_W, WINDOW_H);
-   window.gameField = createField(window.mainWindow, 2, 5, FIELD_W, FIELD_H);
-   window.infoField = createField(window.mainWindow, 16, 5, 14, 8);
-   window.textField = createField(window.mainWindow, 11, 2, TEXT_W, TEXT_H);
+   initGameField (&window);
 
-
-   initField(&window.dynamicField, window.gameField);
-   initShipsInf(&window.dynamicInf, window.infoField);
-
-   char p1Mode = 'c';
-   char p2Mode = 'c';
-
-   if (gameMode == 'm')
-       p2Mode = 'a';
 
 
    while (!checkWin(player_1 -> field) && !checkWin (player_2 -> field)){  
+        
+       doShot(player_1, player_2, window);
 
-       doShot(player_1, player_2, p1Mode, window);
-
-       doShot(player_2, player_1, p2Mode, window);
+       doShot(player_2, player_1, window);
 
    }
 
 }
 
-void setShipsInf(int* shipsInf)
+void setShipsLeft(int* ships_left)
 {
-    shipsInf[0] = 4;
-    shipsInf[1] = 3;
-    shipsInf[2] = 2;
-    shipsInf[3] = 1;
+    ships_left[0] = 4;
+    ships_left[1] = 3;
+    ships_left[2] = 2;
+    ships_left[3] = 1;
 }
 
-void printText (char** field, char* text)
-{
-    sprintf(*field, "%s", text);
-}
-
-void updateField(char** windowField, Cell** field, bool hideShips)
+void updateShipsField(Window window, Cell** field, bool hide_ships)
 {
     for (int i = 0; i < SIZE; i++) {             
        for (int j = 0; j < SIZE; j++) {        
                                           
             Cell cell = field[i][j];
 
-            if (cell.shipId != -1 && !cell.isHitted && !hideShips) 
-                windowField[i][j] = 'I';
+            if (cell.ship_id != -1 && !cell.is_hitted && !hide_ships) {
+                window.field[i][j] = 'I';
+                window.color_map[i][j] = 'g';
+            }
 
-            else if (cell.shipId != -1 && cell.isHitted)
-                windowField[i][j] = 'X';
+            else if (cell.ship_id != -1 && cell.is_hitted) {
+                window.field[i][j] = 'X';
+                window.color_map[i][j] = 'r';
+            }
 
-            else if (cell.isHitted)
-                windowField[i][j] = 'O';
+            else if (cell.is_hitted) {
+                window.field[i][j] = 'O';
+                window.color_map[i][j] = 'c';
+            }
 
-            else
-                windowField[i][j] = '~';
+            else {
+                window.field[i][j] = '~';
+                window.color_map[i][j] = 'b';
+            }
        }
     }
 }
+
+void initGameField(GameWindow* window)
+{
+    window -> root = createWindow(WINDOW_W, WINDOW_H);
+
+    window -> game_field  = createField(window -> root, 2, 2, GAME_FIELD_W, GAME_FIELD_H);
+    window -> info_field  = createField(window -> root, 15, 2, SHIPS_INF_W, SHIPS_INF_H);
+    window -> text_field  = createField(window -> root, 10, 0, TEXTFIELD_W, TEXTFIELD_H);
+
+
+    window -> ships_field = initMapField(window -> game_field);
+
+    window -> ships_left = initInfoField(window -> info_field);
+}
+
 
 Cell** storeField (Cell** field, Cell** tmp)
 {
@@ -102,7 +132,6 @@ Cell** storeField (Cell** field, Cell** tmp)
             tmp[i][j] = field[i][j];
 
     return tmp;
-
 }
 
 Cell** mallocField (Cell** field)
@@ -115,16 +144,22 @@ Cell** mallocField (Cell** field)
     return field;
 }
 
-void updateShipsInf(char** windowField, int* ships)
+void updateShipsLeft(Window ships_left, int* ships)
 {
-    sprintf(*windowField, "%3i%3i%3i%3i", ships[0], ships[1], ships[2], ships[3]);  
+    sprintf(*(ships_left.field), "%3i%3i%3i%3i", ships[0], ships[1], ships[2], ships[3]);  
+
+    for (int i = 0; i < ships_left.width; i++)
+        if (ships_left.field[0][i] == '0')
+            ships_left.color_map[0][i] = 'g';
 }
 
-void initField(char*** dynamicField, char** field)
+Window initMapField(Window game_field)
 {
+     Window ships_field;
+     
      const char letters[] = "ABCDEFGHIJ";
-     char** buff = field;
-     char* buf = *field;
+     char** buff = game_field.field;
+     char* buf = *buff;
 
      *buf++ = ' ';
 
@@ -143,13 +178,15 @@ void initField(char*** dynamicField, char** field)
           buf = *++buff;
      }
 
-     *dynamicField = createField(field, 1, 1, 10, 10);
+     ships_field = createField(game_field, 1, 1, 10, 10);
+     return ships_field;
 }
 
-void initShipsInf(char*** dynamicField, char** shipsInf)
+Window initInfoField(Window info_field)
 {
-    char** buff = shipsInf;
-    char* buf = *shipsInf;
+    
+    char** buff = info_field.field;
+    char* buf = *buff;
 
     sprintf(buf, "     SHIPS    ");
     buf = *++buff;
@@ -175,60 +212,66 @@ void initShipsInf(char*** dynamicField, char** shipsInf)
     sprintf(buf, "           I  ");
     buf = *++buff;
 
-    *dynamicField = createField(shipsInf, 0, 2, 14, 1);
+    Window ships_left = createField(info_field, 0, 2, 14, 1);
 
+    return ships_left;
 }
 
 
-void doShot (Player* player_1, Player* player_2, char shotMode, GameWindow window)
+void doShot (Player* player_1, Player* player_2, GameWindow window)
 {
 
-    updateField(window.dynamicField, player_2 -> field, true);
-    updateShipsInf(window.dynamicInf, player_2 -> shipsInf);
-    
+    bool hide_ships = true;
 
+    updateShipsField(window.ships_field, player_2 -> field, hide_ships);
+    printf("SHIPS FIELD UPDATED\n");
+    updateShipsLeft(window.ships_left, player_2 -> ships_left);
+    printf("SHIPS INFO UPDATED\n");
+    
     while (true) {
 
            char move[NAME_LENGTH + strlen(" move")];
            sprintf(move, "%s move", player_1 -> name);
+           printToTextField(window.text_field, move, 'w');
 
-           clearTextField(window.textField);
-           printText(window.textField, move);
+           renderWindow(window.root, RENDER_OPT);
 
-           renderWindow(window.mainWindow, WINDOW_W, WINDOW_H, RENDER_OPT);
+           int* shot;
+           if (player_1 -> is_machine)
+                shot = getShot(window, 'a');
+           else
+                shot = getShot(window, 'c');
 
-           int* shot = getShot(shotMode);
 
-           if (player_2 -> field[shot[1]][shot[0]].isHitted)
+           if (player_2 -> field[shot[1]][shot[0]].is_hitted)
                continue;
 
-           player_2 -> field[shot[1]][shot[0]].isHitted = true;
+           player_2 -> field[shot[1]][shot[0]].is_hitted = true;
             
            if (isHit (shot, player_2 -> field)) {
 
+               player_1 -> count++;
+
                int shipId = getShipId(shot, player_2 -> field);
 
-               clearTextField(window.textField);
-               printText(window.textField, "HITTED");  
+               printToTextField(window.text_field, "HITTED", 'r');  
 
                if (isKilled(shipId, player_2 -> ships)) {
-                    player_2 -> ships[shipId].isKilled = true;
+
+                    player_2 -> ships[shipId].is_killed = true;
 
                     setEnvire(player_2 -> ships[shipId], player_2 -> field);
 
-                    delete(player_2 -> ships[shipId], player_2 -> shipsInf);
+                    delete(player_2 -> ships[shipId], player_2 -> ships_left);
 
-                    updateShipsInf(window.dynamicInf, player_2 -> shipsInf);
+                    updateShipsLeft(window.ships_left, player_2 -> ships_left);
 
-                    clearTextField(window.textField);
-                    printText(window.textField, "KILLED"); 
+                    printToTextField(window.text_field, "KILLED", 'r'); 
                }
                
-               player_1 -> count++;
+               updateShipsField(window.ships_field, player_2 -> field, true);
 
-               updateField(window.dynamicField, player_2 -> field, true);
-
-               renderWindow(window.mainWindow, WINDOW_W, WINDOW_H, RENDER_OPT);
+               renderWindow(window.root, RENDER_OPT);
 
                sleep(SLEEP_TIME);
 
@@ -236,11 +279,10 @@ void doShot (Player* player_1, Player* player_2, char shotMode, GameWindow windo
 
            }
 
-           clearTextField(window.textField);
-           printText(window.textField, "MISSED");
+           printToTextField(window.text_field, "MISSED", 'c');
 
-           updateField(window.dynamicField, player_2 -> field, true);
-           renderWindow(window.mainWindow, WINDOW_W, WINDOW_H, RENDER_OPT);
+           updateShipsField(window.ships_field, player_2 -> field, true);
+           renderWindow(window.root, RENDER_OPT);
 
            sleep(SLEEP_TIME);
 
@@ -250,23 +292,55 @@ void doShot (Player* player_1, Player* player_2, char shotMode, GameWindow windo
 
 }
 
-void clearTextField(char** textField)
-{
-    for (int i = 0; i < TEXT_H; i++)
-        for (int j = 0; j < TEXT_W; j++)
-            textField[i][j] = ' ';
-}
-
-
-int* getShot(char shotMode) 
+int* getShot(GameWindow window, char shotMode) 
 {
     int* shot;
     if (shotMode == 'a')
         shot = getMachineShot();
-    else
-        shot = getUserShot();
+    else {
+        shot = getCursorShot(window);
+    }
     
     return shot;
+
+}
+
+int* getCursorShot(GameWindow window)
+{
+
+    static int shot[2];
+
+    Cursor cursor;
+
+    initCursorOnWindow(&cursor, window.ships_field, 'm', 'r');
+    renderCursor(cursor);
+    renderWindow(window.root, RENDER_OPT);
+
+    while(true) {
+    
+        char value = listenInput();
+        char vector;
+
+        switch(value) {
+        
+            case '\033':
+                vector = getArrowVector();
+                break;
+            case '\n':
+                shot[0] = cursor.curr_x;
+                shot[1] = cursor.curr_y;
+                freeCursor(cursor);
+                return shot;
+                break;
+
+            default:
+                vector = '0';
+        
+        } 
+        moveCursor(&cursor, vector, false);
+        renderWindow(window.root, RENDER_OPT);
+    }
+
 
 }
 
@@ -275,7 +349,7 @@ int getShipId (int* shot, Cell** field)
     int x = shot[0];
     int y = shot[1];
 
-    return field[y][x].shipId;
+    return field[y][x].ship_id;
 
 }
 
@@ -296,7 +370,7 @@ bool isHit (int* shot, Cell** field)
     int x = shot[0];
     int y = shot[1];
 
-    if (field[y][x].shipId != -1)
+    if (field[y][x].ship_id != -1)
         return true;
 
     return false;
@@ -309,13 +383,13 @@ bool isKilled(const int id, Ship* ships)
 
     int size = ship.size;
 
-    int hittedCells = 0;
+    int hitted_cells = 0;
 
     for (int i = 0; i < size; i++) 
-        if (ship.cells[i] -> isHitted)
-            hittedCells++;
+        if (ship.cells[i] -> is_hitted)
+            hitted_cells++;
 
-    if (size == hittedCells)
+    if (size == hitted_cells)
         return true;
 
     return false;
@@ -382,8 +456,8 @@ void initCells (Cell** field)
         {
             field[i][j].x = j;
             field[i][j].y = i;
-            field[i][j].isHitted = false;
-            field[i][j].shipId = -1;
+            field[i][j].is_hitted = false;
+            field[i][j].ship_id = -1;
         }
 }
 
@@ -434,7 +508,7 @@ void setEnvire(Ship ship, Cell** field)
                continue;
             }
             
-            field[i][j].isHitted = true; 
+            field[i][j].is_hitted = true; 
 
         }
             

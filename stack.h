@@ -14,6 +14,6 @@ int pop(Buffer a);
 
 void print(Buffer a);
 
-bool isEmpty(Buffer a);
+bool isEmptyBuffer(Buffer a);
 
 #endif

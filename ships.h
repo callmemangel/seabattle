@@ -6,25 +6,25 @@
 #include "structs.h"
 
 
-void setShips (Player* player, char gameMode);
+void setShips (Player* player);
 
-char getSetMode (char* name, char gameMode);
+char getSetMode (Player player);
 
-bool isEmpty (int* shipsLeft);
+bool isEmpty (int* ships_left);
 
 void reset (Ship ship);
 
-int* getCoords(char setMode, int* coords);
+int* getCoords(char set_mode, int* coords);
 
 int calcSize(int* coords);
 
 int calcDist(int x1, int y1, int x2, int y2);
 
-bool contains (Ship ship, int* shipsToSet);
+bool contains (Ship ship, int* ships_to_set);
 
 bool isAgreed(void);
 
-void delete (Ship ship, int* shipsToSet);
+void delete (Ship ship, int* ships_to_set);
 
 int* getUserCoords(void);
 

@@ -12,9 +12,9 @@ typedef struct {
     int x;
     int y;
 
-    bool isHitted;
+    bool is_hitted;
 
-    short shipId;
+    short ship_id;
 
 } Cell;
 
@@ -25,7 +25,7 @@ typedef struct {
 
     Cell** cells;
 
-    bool isKilled;
+    bool is_killed;
 
 } Ship;
 
@@ -33,27 +33,31 @@ typedef struct {
 typedef struct {
 
     char name[NAME_LENGTH];
+
     int count;
+
     Cell** field;
     Ship ships[10];
-    int shipsInf[4];
+
+    int ships_left[4];
+
+    bool is_machine;
 
 } Player;
 
 typedef struct {
 
-    Window mainWindow;
+    Window root;
 
-    char** gameField;
-    char** infoField;
+    Window game_field;
+    Window ships_field;
 
-    char** dynamicField;
-    char** dynamicInf;
+    Window info_field;
+    Window ships_left;
 
-    char** textField;
+    Window text_field;
 
 } GameWindow;
-
 
 
 #endif

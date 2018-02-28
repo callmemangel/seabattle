@@ -3,11 +3,17 @@
 #include "getch.h"
 #include "window.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 void renderCursor(Cursor cursor)
 {
-    cursor.window.field[cursor.curr_y][cursor.curr_x] = cursor.sign;
-    cursor.window.color_map[cursor.curr_y][cursor.curr_x] = cursor.color;
+    for (int i = 0; i < cursor.size; i++) {
+        for (int j = 0; j < cursor.size; j++) {
+
+            cursor.window.field[cursor.curr_y + i][cursor.curr_x + j] = cursor.sign;
+            cursor.window.color_map[cursor.curr_y + i][cursor.curr_x + j] = cursor.color;
+        }
+    }
 }
 
 void moveCursor(Cursor* cursor, char vector, bool start_draw)
@@ -17,8 +23,13 @@ void moveCursor(Cursor* cursor, char vector, bool start_draw)
     }
 
     else {
-        cursor -> prev_value = cursor -> sign;
-        cursor -> prev_color = cursor -> color; 
+        for (int i = 0; i < cursor -> size; i++) {
+            for (int j = 0; j < cursor -> size; j++) {
+ 
+                cursor -> stored_values[i * cursor -> size + j] = cursor -> sign;   
+                cursor -> stored_colors[i * cursor -> size + j] = cursor -> color;   
+            }    
+        }
     }
     
     switch (vector) {
@@ -31,7 +42,7 @@ void moveCursor(Cursor* cursor, char vector, bool start_draw)
        break;
        
     case 'r':
-       if (cursor -> curr_x == cursor -> window.width - 1) 
+       if (cursor -> curr_x + cursor -> size == cursor -> window.width) 
            break;
 
        cursor -> curr_x += 1;
@@ -45,7 +56,7 @@ void moveCursor(Cursor* cursor, char vector, bool start_draw)
        break;
 
     case 'd':
-       if (cursor -> curr_y == cursor -> window.height - 1) 
+       if (cursor -> curr_y + cursor -> size == cursor -> window.height) 
            break;
 
        cursor -> curr_y += 1;
@@ -57,6 +68,7 @@ void moveCursor(Cursor* cursor, char vector, bool start_draw)
         storePrevCell(cursor);
 
     else {
+        push(cursor -> drawCoords, cursor -> size);
         push(cursor -> drawCoords, cursor -> curr_x);
         push(cursor -> drawCoords, cursor -> curr_y);
     }
@@ -64,30 +76,78 @@ void moveCursor(Cursor* cursor, char vector, bool start_draw)
     renderCursor(*cursor);
 }
 
+char getArrowVector(void)
+{
+    getch();
+
+    char vector;
+
+    switch(getch())
+    {
+    
+        case 'A': 
+            vector = 'u';
+            break;
+
+        case 'B':
+            vector = 'd';
+            break;
+
+        case 'C':
+            vector = 'r';
+            break;
+
+        case 'D':
+            vector = 'l';
+            break;
+    
+    }
+
+    return vector;
+
+}
+
+
 void storePrevCell(Cursor* cursor)
 {
     cursor -> prev_x = cursor -> curr_x;
     cursor -> prev_y = cursor -> curr_y;
-    cursor -> prev_value = cursor -> window.field[cursor -> curr_y][cursor -> curr_x];
-    cursor -> prev_color = cursor -> window.color_map[cursor -> curr_y][cursor -> curr_x];
+
+    for (int i = 0; i < cursor -> size; i++) {
+        for (int j = 0; j < cursor -> size; j++) {
+          cursor -> stored_values[i * cursor -> size + j] = cursor -> window.field[cursor -> curr_y + i][cursor -> curr_x + j];
+          cursor -> stored_colors[i * cursor -> size + j] = cursor -> window.color_map[cursor -> curr_y + i][cursor -> curr_x + j];
+          
+        } 
+    }
 }
 
 void recoverPrevCell(Cursor cursor)
 {
-    cursor.window.field[cursor.prev_y][cursor.prev_x] = cursor.prev_value;
-    cursor.window.color_map[cursor.prev_y][cursor.prev_x] = cursor.prev_color;
+    for (int i = 0; i < cursor.size; i++) {
+        for (int j = 0; j < cursor.size; j++) {
+
+            cursor.window.field[cursor.prev_y + i][cursor.prev_x + j] = cursor.stored_values[i * cursor.size + j];
+            cursor.window.color_map[cursor.prev_y + i][cursor.prev_x + j] = cursor.stored_colors[i * cursor.size + j];
+        } 
+    }
 }
 
-void deleteLastSymbol(Cursor cursor)
+void deleteLastSymbol(Cursor* cursor)
 {
-    if (isEmpty (cursor.drawCoords))
+    if (isEmptyBuffer (cursor -> drawCoords))
         return;
 
-    int y = pop(cursor.drawCoords);
-    int x = pop(cursor.drawCoords);
+    int y = pop(cursor -> drawCoords);
+    int x = pop(cursor -> drawCoords);
+    int size = pop(cursor -> drawCoords);
 
-    cursor.window.field[y][x] = ' ';
-    cursor.window.color_map[y][x] = ' ';
+    for (int i = 0; i < size; i++)
+        for (int j = 0; j < size; j++) { 
+            cursor -> window.field[y + i][x + j] = ' ';
+            cursor -> window.color_map[y + i][x + j] = ' ';
+        }
+    storePrevCell(cursor);
 }
     
 
@@ -102,23 +162,33 @@ void initCursorOnWindow(Cursor* cursor, Window window, char curs_sign, char curs
 
    cursor -> window = window;
 
-   cursor -> prev_value = window.field[0][0];
-   cursor -> prev_color = window.color_map[0][0];
+   cursor -> stored_values = malloc(sizeof(char));
+   cursor -> stored_colors = malloc(sizeof(char));
+
+   cursor -> stored_values[0] = window.field[0][0];
+   cursor -> stored_colors[0] = window.color_map[0][0];
 
    cursor -> sign = curs_sign;
 
-   cursor -> drawCoords.size = 20;
-   cursor -> drawCoords.buffer = calloc(20, sizeof(int));
+   cursor -> drawCoords.size = 30;
+   cursor -> drawCoords.buffer = calloc(30, sizeof(int));
 
    cursor -> color = curs_color;
 
+   cursor -> size = 1;
+
+}
+
+void freeCursor(Cursor cursor)
+{
+    free(cursor.stored_values);
+    free(cursor.stored_colors);
+    free(cursor.drawCoords.buffer);
 }
 
 char listenInput(void)
 {
- 
     return getch(); 
-
 }
 
 

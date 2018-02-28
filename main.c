@@ -20,13 +20,17 @@ int main(void)
     player_1.field = mallocField(player_1.field);    
     player_2.field = mallocField(player_2.field);    
 
+    player_1.is_machine = false;
+    player_2.is_machine = false;
+
         
     while (true) { 
 
         system("clear");
 
         gameMode = getGameMode();
-
+        if (gameMode == 'm')
+            player_2.is_machine = true;
 
         system("clear");
 
@@ -44,21 +48,22 @@ int main(void)
         initCells (player_1.field);
         initCells (player_2.field);
 
-        setShipsInf(player_1.shipsInf);
-        setShipsInf(player_2.shipsInf);
+        printf("CELLS INITED\n");
 
-        setShips(&player_1, 'p');
-        if (gameMode == 'm')
-            setShips(&player_2, 'm');
-        else
-            setShips(&player_2, 'p');
+        setShipsLeft(player_1.ships_left);
+        setShipsLeft(player_2.ships_left);
 
+        printf("ships setted\n");
 
-        setShipsInf(player_1.shipsInf);
-        setShipsInf(player_2.shipsInf);
+        setShips(&player_1);
+        setShips(&player_2);
 
 
-        startGame(&player_1, &player_2, gameMode);
+        setShipsLeft(player_1.ships_left);
+        setShipsLeft(player_2.ships_left);
+
+
+        startGame(&player_1, &player_2);
             
         if (!wannaRepeat())
             break;
