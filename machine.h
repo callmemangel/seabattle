@@ -1,13 +1,23 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
-int* getMachineShot(void);
+#include "structs.h"
+
+int* getMachineShot(Player player);
 
 int getMachineLvl(void);
 
 int* getEazyShot(void);
 
-int* getMidShot(void);
+int* getMidShot(Player player);
+
+int* getShotForVector(const int* prev_shot, int* curr_shot, char vector);
+
+char switchVector(const char vector);
+
+char calcVector(int* prev_shot, int* curr_shot);
+
+char getRandVector(const int* shot);
 
 int* getHardShot(void);
 

@@ -22,51 +22,38 @@ int main(void)
 
     player_1.is_machine = false;
     player_2.is_machine = false;
-
         
     while (true) { 
 
         system("clear");
 
-        gameMode = getGameMode();
+        gameMode = getCursorGameMode();
         if (gameMode == 'm')
             player_2.is_machine = true;
 
         system("clear");
 
-        printf("Player1 name: ");
-        getPlayerName(player_1.name, 'p');
+        getPlayerName(&player_1);
+        getPlayerName(&player_2); 
 
-        if (gameMode == 'p') {
-            printf("Player2 name: ");
-            getPlayerName(player_2.name, 'p'); 
-        }
-        else
-            getPlayerName(player_2.name, 'a');
-
-
+        renderWinnerWindow(*player_1, window.root);
         initCells (player_1.field);
         initCells (player_2.field);
-
-        printf("CELLS INITED\n");
-
-        setShipsLeft(player_1.ships_left);
-        setShipsLeft(player_2.ships_left);
-
-        printf("ships setted\n");
 
         setShips(&player_1);
         setShips(&player_2);
 
+        printf("Player ships setted\n");
 
         setShipsLeft(player_1.ships_left);
         setShipsLeft(player_2.ships_left);
 
 
-        startGame(&player_1, &player_2);
+
+        startGame(&player_1, &player_2);          
             
-        if (!wannaRepeat())
-            break;
+        //if (!wannaRepeat())
+  //          break;
 //        resetGame();
     }
 

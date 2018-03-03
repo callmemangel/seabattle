@@ -1,7 +1,7 @@
 all: sea
 
-sea: main.o game.o ships.o machine.o window.o cursor.o stack.o getch.o
-	gcc main.o game.o ships.o machine.o window.o cursor.o stack.o getch.o -lm -o sea
+sea: main.o game.o ships.o machine.o window.o cursor.o stack.o getch.o animation.o
+	gcc main.o game.o ships.o machine.o window.o cursor.o stack.o getch.o animation.o -lm -o sea
 
 main.o: main.c
 	gcc -c main.c
@@ -26,6 +26,9 @@ stack.o: stack.c
 
 getch.o: getch.c
 	gcc -c getch.c
+
+animation.o: animation.c
+	gcc -c animation.c 
 
 clean: 
 	rm -rf *.o 

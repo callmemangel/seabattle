@@ -1,5 +1,10 @@
-#include <termios.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <termios.h>
+#include "getch.h"
 
 static struct termios old, new;
 
@@ -29,10 +34,42 @@ char getch_(int echo)
   return ch;
 }
 
+char _getch(int echo)
+{
+  char ch;
+  initTermios(echo);
+  fd_set rfds;
+  struct timeval tv;
+  int retval;
+	
+  FD_ZERO(&rfds);
+  FD_SET(0, &rfds);
+		
+  tv.tv_sec = 0;
+  tv.tv_usec = 100000;	
+  retval = select(2, &rfds, NULL, NULL, &tv);
+
+  if (retval) {
+    ch = getchar();
+  }
+  else
+  {
+    ch = '\0'; 
+  }
+  FD_CLR(0, &rfds);
+  resetTermios();
+  return ch;
+}
+
 /* Read 1 character without echo */
 char getch(void) 
 {
   return getch_(0);
+}
+
+char getch_unin(void)
+{
+  return _getch(0);
 }
 
 /* Read 1 character with echo */

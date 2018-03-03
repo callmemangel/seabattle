@@ -1,14 +1,17 @@
 #include "machine.h"
+#include "animation.h"
 #include "structs.h"
 #include "window.h"
 #include "ships.h"
 #include "game.h"
+#include "cursor.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <unistd.h>
 #include <string.h>
 
 #define WINDOW_W 30 
@@ -27,15 +30,21 @@
 
 void setShips (Player* player)
 {
-
+    
     GameWindow window;
     initGameField(&window);
+    
+    updateShipsField(window.ships_field, player -> field, false);
 
     Cell** prev_field;
     
     char set_mode = getSetMode(*player); 
 
-    renderWindow(window.root, RENDER_OPT);
+    setShipsLeft(player -> ships_left);
+    updateShipsLeft(window.ships_left, player -> ships_left);
+
+    if (!player -> is_machine)
+        renderWindow(window.root, RENDER_OPT);
 
     int curr_ship = 0;
 
@@ -43,7 +52,8 @@ void setShips (Player* player)
 
     while (!isEmpty (player -> ships_left)) {
 
-        int* coords = getCoords(set_mode, coords);   
+        int* coords = getCoords(set_mode, window, player -> ships_left);   
+        printf("got coords\n");
 
         if (!checkCoords(coords, player -> field))
             continue; 
@@ -57,29 +67,40 @@ void setShips (Player* player)
         if (!contains(*ship, player -> ships_left))
             continue;
 
-        renderWindow(window.root, RENDER_OPT);
+        if (!player -> is_machine)
+            renderWindow(window.root, RENDER_OPT);
 
         setShip(ship, coords, player -> field);
-        
-        updateShipsField(window.ships_field, player -> field, false);
-        
-        renderWindow(window.root, RENDER_OPT);
-
-        if (!player -> is_machine)
-            if (!isAgreed()) {
-
-                reset(*ship);
-                updateShipsField(window.ships_field, prev_field, false);
-                renderWindow(window.root, RENDER_OPT);
-                continue;
-            }
 
         delete(*ship, player -> ships_left);
         updateShipsLeft(window.ships_left, player -> ships_left);
+        updateShipsField(window.ships_field, player -> field, false);
+        
+        if (!player -> is_machine)  {
 
-        renderWindow(window.root, RENDER_OPT);
+            Animation splash =  createShipSetSplashAnimation(ship -> cells[0] -> x,
+                                                             ship -> cells[0] -> y, *ship);
+        
+            renderAnimationOnWindow(splash, window.game_field, window.root);
+            renderWindow(window.root, RENDER_OPT);
+
+            if (!isAgreed()) {
+                player -> ships_left[ship -> size - 1]++;
+                reset(*ship);
+                updateShipsField(window.ships_field, prev_field, false);
+                updateShipsLeft(window.ships_left, player -> ships_left);
+                renderWindow(window.root, RENDER_OPT);
+                continue;
+            }
+        }
+
+       printf("ships updated\n");
+        
+        if (!player -> is_machine)
+            renderWindow(window.root, RENDER_OPT);
 
         curr_ship++;
+        printf("CURR SHIP = %i\n", curr_ship);
     }
 }
 
@@ -109,7 +130,8 @@ char getSetMode (Player player)
         return set_mode;
     } 
 
-    do {
+    return getCursorShipSet(player);
+/*    do {
         printf("%s SHIPS PLACEMENT\n"
                "a - AUTO\n" 
                "c - CUSTOM\n", player.name);
@@ -121,7 +143,7 @@ char getSetMode (Player player)
 
     } while (set_mode != 'a' && set_mode != 'c');
 
-    return set_mode;
+    return set_mode;*/
 }
 
 bool isEmpty (int* ships_left)
@@ -133,14 +155,165 @@ bool isEmpty (int* ships_left)
     return true;
 }
 
-int* getCoords(char set_mode, int* coords)
+int* getCoords(char set_mode, GameWindow window, int* ships_left)
 {
+    int* coords;
     if (set_mode == 'a')
         coords = getMachineCoords();
     else
-        coords = getUserCoords();
+        coords = getCursorCoords(window, ships_left);
 
     return coords;
+}
+
+int chooseShip(GameWindow window, int* ships_left)
+{
+
+    Cursor cursor;
+    initCursorOnWindow(&cursor, window.info_field, 'I', 'G', 1, 1);
+    cursor.curr_x = 2;
+    cursor.curr_y = 4;
+    storeBeforeRender(&cursor);
+
+    renderCursor(cursor);
+    renderWindow(window.root, 0);
+
+    
+    int position = 1;
+
+    while (true) {
+    
+        int input = listenInput();
+
+        char vector = '\0';
+
+        switch (input) {
+            
+           case '\033':
+              vector = getArrowVector();
+
+              if (vector == 'r' && position < 4) {
+                  recoverStoredArea(cursor); 
+                  cursor.height++;
+                  storeBeforeRender(&cursor);
+
+                  moveCursor(&cursor, vector, false);
+                  moveCursor(&cursor, vector, false);
+                  moveCursor(&cursor, vector, false);
+                  position++;
+              }
+
+              else if (vector == 'l' && position > 1) {
+                  recoverStoredArea(cursor); 
+                  cursor.height--;
+                  storeBeforeRender(&cursor);
+                  moveCursor(&cursor, vector, false);
+                  moveCursor(&cursor, vector, false);
+                  moveCursor(&cursor, vector, false);
+                  position--;
+              }
+              vector = '\0';
+
+              break;
+
+           case '\n':
+              if (ships_left[position - 1] == 0)
+                  break;
+              recoverStoredArea(cursor);
+              freeCursor(cursor);
+              return position;
+              break;
+
+           default:
+              vector = '\0';
+        
+        }
+
+        renderWindow(window.root, 0);
+    
+    }
+
+
+}
+int* getCursorCoords(GameWindow window, int* ships_left) 
+{
+    static int coords[4];
+
+    int size = chooseShip(window, ships_left);
+
+    ships_left[size - 1]--;
+    updateShipsLeft(window.ships_left, ships_left);
+    ships_left[size - 1]++;
+
+    
+    Cursor cursor;
+ 
+    initCursorOnWindow(&cursor, window.ships_field, 'I', 'C', 1, size);
+    renderCursor(cursor);
+    renderWindow(window.root, 0);
+
+    while(true) {
+
+        int input = listenInput();
+
+        char vector = '\0';
+
+        switch (input) {
+            
+           case '\033':
+              vector = getArrowVector();
+              break;
+
+           case '\n':
+              coords[0] = cursor.curr_x;
+              coords[1] = cursor.curr_y;
+
+              if (cursor.width >= cursor.height) {
+                  coords[2] = cursor.curr_x + size - 1;
+                  coords[3] = cursor.curr_y;
+              }
+
+              else if (cursor.width < cursor.height) {
+                  coords[2] = cursor.curr_x;
+                  coords[3] = cursor.curr_y + size - 1; 
+              }
+              recoverStoredArea(cursor);
+              freeCursor(cursor); 
+              return coords;
+              break;
+
+            case 'r':
+
+              if (cursor.width >= cursor.height && cursor.curr_y + cursor.width - 1<= 9) {
+                    recoverStoredArea(cursor);
+                    int tmp = cursor.width;
+                    cursor.width = cursor.height;
+                    cursor.height = tmp;
+                    storeBeforeRender(&cursor);
+              }
+
+              else if (cursor.width < cursor.height && cursor.curr_x + cursor.height - 1 <= 9) {
+                    recoverStoredArea(cursor);
+                    int tmp = cursor.width;
+                    cursor.width = cursor.height;
+                    cursor.height = tmp;
+                    storeBeforeRender(&cursor);
+
+              }
+              break;
+
+           default:
+              vector = '\0';
+        
+        }
+
+        moveCursor(&cursor, vector, false);
+        renderWindow(window.root, 0);
+    
+    }  
+
+     
+
 }
 
 int calcSize(int coords[4]) 
@@ -198,6 +371,11 @@ bool isAgreed(void)
 void delete (Ship ship, int* shipsToSet)
 {
     shipsToSet[ship.size - 1]--;
+    printf("SHIP OF SIZE %i DELETED\n", ship.size);
+    printf("1 = %i\n", shipsToSet[0]);
+    printf("2 = %i\n", shipsToSet[1]);
+    printf("3 = %i\n", shipsToSet[2]);
+    printf("4 = %i\n", shipsToSet[3]);
 }
 
 void setShip (Ship* ship, int* coords, Cell** field)
@@ -294,7 +472,6 @@ bool validCoords(int* coords, int number)
         if (coords[i] > 9 || coords[i] < 0)  {
             return false;
         }
-
    }
 
    return true;

@@ -12,6 +12,10 @@ void initTermios(int echo);
 /* Restore old terminal i/o settings */
 void resetTermios(void);
 
+char _getch(int echo);
+
+char getch_unin(void);
+
 /* Read 1 character - echo defines echo mode */
 char getch_(int echo);
 

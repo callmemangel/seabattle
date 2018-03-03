@@ -23,7 +23,8 @@ typedef struct {
     char sign;    
     char color;
 
-    int size;
+    int width;
+    int height;
 
 } Cursor;
 
@@ -34,13 +35,13 @@ char getArrowVector(void);
 
 void renderCursor(const Cursor cursor);
 
-void storePrevCell(Cursor* cursor);
+void storeBeforeRender(Cursor* cursor);
 
-void recoverPrevCell(const Cursor cursor);
+void recoverStoredArea(const Cursor cursor);
 
 void moveCursor(Cursor* cursor, char vector, bool start_draw);
 
-void initCursorOnWindow(Cursor* cursor, const Window window, const char curs_sign, const char curs_color);
+void initCursorOnWindow(Cursor* cursor, const Window window, const char curs_sign, const char curs_color, int width, int height);
 
 void deleteLastSymbol(Cursor* cursor);
 

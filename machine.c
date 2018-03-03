@@ -8,8 +8,9 @@
 
 
 
-int* getMachineShot(void)
+int* getMachineShot(Player player)
 {
+
     static int machineLvl = -1;
 
     if (machineLvl == -1)
@@ -20,12 +21,10 @@ int* getMachineShot(void)
     if (machineLvl == 0)
         shot = getEazyShot();
     else if (machineLvl == 1) 
-        shot = getMidShot();
+        shot = getMidShot(player);
     else
         shot = getHardShot();
 
-    sleep(1);
-    printf("BEFORE RETURN\n");
     return shot;
 }
 
@@ -52,32 +51,214 @@ int getMachineLvl(void)
 
 int* getEazyShot()
 {
-
     static int shot[2];
     
-    srand(time(NULL));
-
     int x = rand() % 10;
     int y = rand() % 10;
 
     shot[0] = x;
     shot[1] = y;
 
-
-    printf("MACHINE x = %i\n", x);
-    printf("MACHINE y = %i\n", y);
-
     return shot;
 }
 
+int* getMidShot(Player player)
+{
+    static int prev_shot[2] = {-2, -2};
+    static int hits = 0;
+    static char vector = '\0';
+    static int mode = 0;
 
-int* getMidShot()
+    static int curr_shot[2];
+
+
+    if (prev_shot[0] == -2)
+    {
+        int* tmp;
+        tmp = getEazyShot(); 
+        curr_shot[0] = tmp[0];
+        curr_shot[1] = tmp[1];
+
+        FILE* log_file = fopen("log.txt", "a");
+        fprintf(log_file, "got eazy shot with coords (%i, %i)\n", curr_shot[0], curr_shot[1]);
+        fclose(log_file);
+
+
+    }
+
+    else if (vector == '\0') {
+    
+       vector = getRandVector(prev_shot);
+       getShotForVector(prev_shot, curr_shot, vector);
+
+       FILE* log_file = fopen("log.txt", "a");
+       fprintf(log_file, "got random vector %c\n", vector);
+       fprintf(log_file, "got shot for random vector %c (%i, %i)\n", vector, curr_shot[0], curr_shot[1]);
+       fclose(log_file);
+
+       vector = '\0';
+ 
+    }
+
+    else {
+
+       FILE* log_file = fopen("log.txt", "a");
+       while (true) {
+           getShotForVector(prev_shot, curr_shot, vector); 
+
+           if (!validCoords(curr_shot, 2)) {
+               fprintf(log_file, "Wrong shot, switching\n");
+               vector = switchVector(vector); 
+               fprintf(log_file, "New vector = %c\n", vector);
+               mode = 1;
+               continue;
+           }
+
+           break;
+       }
+       
+       fprintf(log_file, "got shot for vector %c (%i, %i)\n", vector, curr_shot[0], curr_shot[1]);
+       fclose(log_file);
+ 
+    }
+
+    FILE* log_file = fopen("log.txt", "a");
+
+    if (isHit(curr_shot, player.field) && !player.field[curr_shot[1]][curr_shot[0]].is_hitted) {
+       fprintf(log_file, "hitted\n");
+ 
+        hits++;
+        fprintf(log_file, "hits = %i\n", hits);
+        int ship_id = getShipId(curr_shot, player.field);
+        fprintf(log_file, "got ship id %i\n", ship_id);
+
+        if (hits == player.ships[ship_id].size) {
+            fprintf(log_file, "SHIP KILLED\n");
+            vector = '\0';
+            prev_shot[0] = -2;
+            prev_shot[1] = -2; 
+            mode = 0;
+            hits = 0;
+            fclose(log_file);
+            return curr_shot;
+        }
+
+        if(prev_shot[0] != -2) {
+            vector = calcVector(prev_shot, curr_shot);
+            fprintf(log_file, "CALLCULATED VECTOR %c\n", vector);
+        } 
+
+        prev_shot[0] = curr_shot[0];
+        prev_shot[1] = curr_shot[1];
+        fprintf(log_file, "prev_shot [0] = \n", prev_shot[0]);
+        fprintf(log_file, "prev_shot [1] = \n", prev_shot[1]);
+    
+    }
+
+    else if (vector != '\0' && mode == 0) {
+        vector = switchVector(vector);  
+        fprintf(log_file, "swithed for vector %c\n", vector);
+        mode = 1;
+    }
+
+    else if (mode == 1) {
+        prev_shot[0] = curr_shot[0];
+        prev_shot[1] = curr_shot[1]; 
+        fprintf(log_file, "prev_shot [0] = \n", prev_shot[0]);
+        fprintf(log_file, "prev_shot [1] = \n", prev_shot[1]);
+    }
+    fclose(log_file);
+
+    return curr_shot;
+}
+
+char switchVector(const char prev_vector)
 {
 
+    char vector;
+    switch (prev_vector) {
+    
+    case 'u':
+        vector = 'd';
+        break;
+    case 'd':
+        vector = 'u';
+        break;
+    case 'l':
+        vector = 'r';
+        break;
+    case 'r':
+        vector = 'l';
+        break;    
+    }
 
+    return vector;
+}
 
+int* getShotForVector(const int* prev_shot, int* curr_shot, char vector) 
+{
 
-    return 0;
+    switch (vector) {
+            case 'u':
+                curr_shot[0] = prev_shot[0];
+                curr_shot[1] = prev_shot[1] - 1;
+                break;
+
+            case 'd':
+                curr_shot[0] = prev_shot[0];
+                curr_shot[1] = prev_shot[1] + 1;
+                break;
+            case 'l':
+                curr_shot[0] = prev_shot[0] - 1;
+                curr_shot[1] = prev_shot[1];
+                break;
+            case 'r':
+                curr_shot[0] = prev_shot[0] + 1;
+                curr_shot[1] = prev_shot[1];
+                break;
+        }
+
+}
+
+char calcVector(int* prev_shot, int* curr_shot)
+{
+   if (prev_shot[0] == curr_shot[0]) {
+
+       if (prev_shot[1] - curr_shot[1] == 1)
+           return 'u';
+   
+       else if (prev_shot[1] - curr_shot[1] == -1)
+           return 'd';
+   }
+
+   else if (prev_shot[1] == curr_shot[1]) {
+
+       if (prev_shot[0] - curr_shot[0] == 1)
+           return 'l';
+
+       else if (prev_shot[0] - curr_shot[0] == -1)
+           return 'r';
+   }
+   else
+       return 'X';
+    
+}
+
+char getRandVector(const int* shot)
+{
+    char vectors[] = {'r', 'd', 'l', 'u'};
+    char vector; 
+    int new_shot[2];
+    do {
+        int rand_num = rand() % 4;
+        printf("rAND NUM = %i\n", rand_num);   
+        vector = vectors[rand_num];
+
+        getShotForVector(shot, new_shot, vector);
+    
+    } while (!validCoords(new_shot, 2));
+
+    return vector;
 }
 
 int* getHardShot()

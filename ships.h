@@ -14,7 +14,11 @@ bool isEmpty (int* ships_left);
 
 void reset (Ship ship);
 
-int* getCoords(char set_mode, int* coords);
+int* getCoords(char set_mode, GameWindow window, int* ships_left);
+
+int* getCursorCoords(GameWindow window, int* ships_left);
+
+int chooseShip(GameWindow window, int* ships_left);
 
 int calcSize(int* coords);
 
