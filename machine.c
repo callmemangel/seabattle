@@ -7,6 +7,25 @@
 #include "time.h"
 
 
+int getMachineLvl(void)
+{
+    int lvl;
+
+    printf("Choose lvl of hardness\n"
+            "0 - eazy\n"
+            "1 - middle\n" );
+
+    do {
+
+        lvl = getchar() - '0';
+        if (lvl != '\n')
+            clearInputBuff();
+
+    } while (lvl != 0 && lvl != 1 && lvl != 2);
+
+    return lvl;
+}
+
 
 int* getMachineShot(Player player)
 {
@@ -20,33 +39,10 @@ int* getMachineShot(Player player)
 
     if (machineLvl == 0)
         shot = getEazyShot();
-    else if (machineLvl == 1) 
+    else 
         shot = getMidShot(player);
-    else
-        shot = getHardShot();
 
     return shot;
-}
-
-int getMachineLvl(void)
-{
-    int lvl;
-
-    printf("Choose lvl of hardness\n"
-            "0 - eazy\n"
-            "1 - middle\n"
-            "2 - hard\n");
-
-    do {
-
-        lvl = getchar() - '0';
-        if (lvl != '\n')
-            clearBuff();
-
-    } while (lvl != 0 && lvl != 1 && lvl != 2);
-
-    return lvl;
-
 }
 
 int* getEazyShot()
@@ -144,7 +140,7 @@ int* getMidShot(Player player)
         }
 
         if(prev_shot[0] != -2) {
-            vector = calcVector(prev_shot, curr_shot);
+            vector = calcHitVector(prev_shot, curr_shot);
             fprintf(log_file, "CALLCULATED VECTOR %c\n", vector);
         } 
 
@@ -172,6 +168,47 @@ int* getMidShot(Player player)
     return curr_shot;
 }
 
+
+char getRandVector(const int* shot)
+{
+    char vectors[] = {'r', 'd', 'l', 'u'};
+    char vector; 
+    int new_shot[2];
+    do {
+        int rand_num = rand() % 4;
+        vector = vectors[rand_num];
+
+        getShotForVector(shot, new_shot, vector);
+    
+    } while (!validCoords(new_shot, 2));
+
+    return vector;
+}
+
+char calcHitVector(int* prev_shot, int* curr_shot)
+{
+   if (prev_shot[0] == curr_shot[0]) {
+
+       if (prev_shot[1] - curr_shot[1] == 1)
+           return 'u';
+   
+       else if (prev_shot[1] - curr_shot[1] == -1)
+           return 'd';
+   }
+
+   else if (prev_shot[1] == curr_shot[1]) {
+
+       if (prev_shot[0] - curr_shot[0] == 1)
+           return 'l';
+
+       else if (prev_shot[0] - curr_shot[0] == -1)
+           return 'r';
+   }
+   else
+       return 'X';
+    
+}
+
 char switchVector(const char prev_vector)
 {
 
@@ -194,6 +231,7 @@ char switchVector(const char prev_vector)
 
     return vector;
 }
+
 
 int* getShotForVector(const int* prev_shot, int* curr_shot, char vector) 
 {
@@ -220,55 +258,6 @@ int* getShotForVector(const int* prev_shot, int* curr_shot, char vector)
 
 }
 
-char calcVector(int* prev_shot, int* curr_shot)
-{
-   if (prev_shot[0] == curr_shot[0]) {
-
-       if (prev_shot[1] - curr_shot[1] == 1)
-           return 'u';
-   
-       else if (prev_shot[1] - curr_shot[1] == -1)
-           return 'd';
-   }
-
-   else if (prev_shot[1] == curr_shot[1]) {
-
-       if (prev_shot[0] - curr_shot[0] == 1)
-           return 'l';
-
-       else if (prev_shot[0] - curr_shot[0] == -1)
-           return 'r';
-   }
-   else
-       return 'X';
-    
-}
-
-char getRandVector(const int* shot)
-{
-    char vectors[] = {'r', 'd', 'l', 'u'};
-    char vector; 
-    int new_shot[2];
-    do {
-        int rand_num = rand() % 4;
-        printf("rAND NUM = %i\n", rand_num);   
-        vector = vectors[rand_num];
-
-        getShotForVector(shot, new_shot, vector);
-    
-    } while (!validCoords(new_shot, 2));
-
-    return vector;
-}
-
-int* getHardShot()
-{
-
-
-
-
-    return 0;
-}
 
 int* getMachineCoords(void)
 {
@@ -298,6 +287,7 @@ int* getMachineCoords(void)
     return coords;
 
 }
+
 
 void rearrangeCoords(int coords[4])
 {

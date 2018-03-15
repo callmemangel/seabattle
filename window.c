@@ -4,6 +4,18 @@
 #include "window.h"
 
 
+void freeWindow(Window* window) {
+
+   for (int i = 0; i < window->height; i++) {
+
+        free(window->field[i]);
+        free(window->color_map[i]);
+   } 
+
+   free(window->field);
+   free(window->color_map);
+}
+
 
 Window createWindow(const int width, const int height)
 {
@@ -43,21 +55,49 @@ Window createField(Window window, const int x, const int y, const int width, con
 
 }
 
+
+void renderWindow (Window window, int option)
+{
+    system("clear");
+
+    char fill = ' ';
+
+    if (option == 1)
+        fill = '.';
+
+    char* ansi_color;
+
+    for (int i = 0; i < window.height; i++)
+    {
+        for (int j = 0; j < window.width; j++) {
+ 
+            ansi_color = getColor(window.color_map[i][j]);
+
+            if (window.field[i][j] == 0 || window.field[i][j] == ' ')
+               printf("%2c", fill);
+            else
+               printf("%s%2c\033[0m", ansi_color, window.field[i][j]); 
+
+            free(ansi_color);
+        }
+        printf("\n");
+    }
+}
+
 char* getColor(char color)
 {
     static char* ansi_color;
 
     ansi_color = malloc(sizeof(char) * 6);
+
     int bold;
 
     if (isupper(color) != 0) {
         bold = 3; 
-    }
-    else {
+    } else {
         bold = 2;
         color = toupper(color); 
     }
-        
 
     int color_num;
 
@@ -88,37 +128,4 @@ char* getColor(char color)
     sprintf(ansi_color, "\033[%i;%im", color_num, bold);
 
     return ansi_color;
-
 }
-
-
-void renderWindow (Window window, int option)
-{
-
-    system("clear");
-    char sign = ' ';
-
-    if (option == 1)
-        sign = '.';
-
-    char* ansi_color;
-
-    for (int i = 0; i < window.height; i++)
-    {
-        for (int j = 0; j < window.width; j++) {
- 
-            ansi_color = getColor(window.color_map[i][j]);
-
-            if (window.field[i][j] == 0 || window.field[i][j] == ' ')
-               printf("%2c", sign);
-            else
-               printf("%s%2c\033[0m", ansi_color, window.field[i][j]); 
-
-            free(ansi_color);
-        }
-
-        printf("\n");
-    }
-
-}
-

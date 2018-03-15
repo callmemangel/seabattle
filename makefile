@@ -1,34 +1,13 @@
-all: sea
+HDRS = $(shell find . -name "*.h")
+SRCS = $(shell find . -name "*.c")
+OBJS = $(patsubst %.c, %.o, $(SRCS))
 
-sea: main.o game.o ships.o machine.o window.o cursor.o stack.o getch.o animation.o
-	gcc main.o game.o ships.o machine.o window.o cursor.o stack.o getch.o animation.o -lm -o sea
+all: $(HDRS) $(OBJS)
+	@echo $(OBJS)
+	gcc -o sea $(OBJS) -lm
 
-main.o: main.c
-	gcc -c main.c
-
-game.o: game.c
-	gcc -c game.c
-
-ships.o: ships.c
-	gcc -c ships.c
-
-machine.o: machine.c
-	gcc -c machine.c
-
-window.o: window.c
-	gcc -c window.c
-
-cursor.o: cursor.c
-	gcc -c cursor.c
-
-stack.o: stack.c
-	gcc -c stack.c
-
-getch.o: getch.c
-	gcc -c getch.c
-
-animation.o: animation.c
-	gcc -c animation.c 
+$(OBJS): %.o: %.c $(HDRS)
+	gcc -O3 -c -o $@ $< 
 
 clean: 
 	rm -rf *.o 

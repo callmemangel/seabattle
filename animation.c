@@ -2,9 +2,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+
 #include "animation.h"
 #include "window.h"
 #include "game.h"
+#include "ships.h"
+
 
 Animation createSalutAnimation(const int x, const int y, const char color)
 {
@@ -31,8 +34,6 @@ Animation createSalutAnimation(const int x, const int y, const char color)
                 startup.frame_colors[i][j * startup.width + k] = color;
     }
     
-        
-    char* rand_symbols = " *@Do O* .#,` % &$\"";
 
     sprintf(startup.frame_bodies[0], "            "
                                      "            "
@@ -134,11 +135,6 @@ Animation createSalutAnimation(const int x, const int y, const char color)
     return startup;
 }
 
-Animation createRandomBoomAnimation(int x, int y)
-{
-
-}
-
 Animation createBoomAnimation(int x, int y)
 {
     Animation boom;
@@ -235,18 +231,6 @@ Animation createBoomAnimation(int x, int y)
 
 
     return boom;
-}
-
-void freeAnimation(Animation* animation)
-{
-    for (int i = 0; i < animation -> frames; i++) {
-        free(animation -> frame_bodies[i]); 
-        free(animation -> frame_colors[i]); 
-    }
-
-    free(animation -> frame_bodies);
-    free(animation -> frame_colors);
-
 }
 
 Animation createShipSetSplashAnimation(int x, int y, Ship ship)
@@ -817,7 +801,6 @@ Animation createShipSetSplashAnimation(int x, int y, Ship ship)
 
 }
 
-
 Animation createSplashAnimation(int x, int y)
 {
     Animation splash;
@@ -934,20 +917,15 @@ Animation createSplashAnimation(int x, int y)
 }
 
 
-
-void deleteAnimation(Animation** animations, int size,  int position)
+void freeAnimation(Animation* animation)
 {
-
-    freeAnimation(animations[position]);
-
-    for (int i = position; i < size; i++)  {
-    
-        *(*animations + i) = *(*animations + i + 1); 
+    for (int i = 0; i < animation -> frames; i++) {
+        free(animation -> frame_bodies[i]); 
+        free(animation -> frame_colors[i]); 
     }
 
-    Animation* animations_tmp = *animations;
-
-    *animations = realloc(*animations, sizeof(Animation) * size);
+    free(animation -> frame_bodies);
+    free(animation -> frame_colors);
 
 }
 
@@ -966,7 +944,7 @@ Window storeArea(Window window, int x, int y, int width, int height)
     return stored_area;
 }
 
-Window storeeArea(Window window, int x, int y, int width, int height)
+Window storeNullArea(Window window, int x, int y, int width, int height)
 {
     Window stored_area = createWindow(width, height);
 
@@ -980,7 +958,6 @@ Window storeeArea(Window window, int x, int y, int width, int height)
     return stored_area;
 }
 
-
 void recoverArea(Window window, Window stored_area, int x, int y, int width, int height)
 {
     for (int i = 0; i < height; i++) {
@@ -993,6 +970,53 @@ void recoverArea(Window window, Window stored_area, int x, int y, int width, int
 }
 
 
+void renderAnimationOnWindow(Animation animation, Window window, Window root)
+{
+    Window stored_area = storeArea(window, animation.x, animation.y, animation.width, animation.height);
+    renderWindow(stored_area, 1);
+
+    for (int i = 0; i < animation.frames; i++) {
+        renderFrameOnWindow(animation, i, window, animation.x, animation.y);
+        renderWindow(root, 0);
+        usleep(animation.ms);
+    }
+
+    recoverArea(window, stored_area, animation.x, animation.y, animation.width, animation.height);
+}
+
+void renderAnimationArrayOnWindow(Animation* animations, Window window, int *size, char opt)
+{
+    for (int i = 0; i < *size; i++) {
+        if (animations[i].currFrame == 0) {
+            if (opt == 'c')
+             animations[i].stored_area = storeNullArea(window, animations[i].x, animations[i].y, 
+                                                            animations[i].width, animations[i].height);
+            else
+             animations[i].stored_area = storeArea(window, animations[i].x, animations[i].y, 
+                                                            animations[i].width, animations[i].height);
+ 
+        }
+    }
+
+    for (int i = 0; i < *size; i++) {
+        if (animations[i].currFrame >= animations[i].frames) {
+
+            recoverArea(window, animations[i].stored_area, animations[i].x, animations[i].y, 
+                                                           animations[i].width, animations[i].height); 
+
+            deleteAnimationInArray(&animations, *size, i);
+
+            *size -= 1;
+            i--;
+
+            continue;
+       }
+
+        renderFrameOnWindow(animations[i], animations[i].currFrame, window, animations[i].x, animations[i].y);
+        animations[i].currFrame++;
+    }
+}
+
 void renderFrameOnWindow(Animation animation, int number,  Window window, int x, int y)
 {
     for (int i = 0; i < animation.height; i++) {
@@ -1003,60 +1027,20 @@ void renderFrameOnWindow(Animation animation, int number,  Window window, int x,
     }
 }
 
-void renderAnimationOnWindow(Animation animation, Window window, Window root)
+
+void deleteAnimationInArray(Animation** animations, int size,  int position)
 {
-    Window stored_area = storeArea(window, animation.x, animation.y, animation.width, animation.height);
-    printf("AREA stored\n");
-    renderWindow(stored_area, 1);
 
-    for (int i = 0; i < animation.frames; i++) {
-        renderFrameOnWindow(animation, i, window, animation.x, animation.y);
-        renderWindow(root, 0);
-        usleep(animation.ms);
+    freeAnimation(animations[position]);
+
+    for (int i = position; i < size; i++)  {
+    
+        *(*animations + i) = *(*animations + i + 1); 
     }
 
-    recoverArea(window, stored_area, animation.x, animation.y, animation.width, animation.height);
-    printf("Area recovered\n");
-}
+    Animation* animations_tmp = *animations;
 
-
-void renderAnimationArrayOnWindow(Animation* animations, Window window, int *size, char opt)
-{
-    for (int i = 0; i < *size; i++) {
-        if (animations[i].currFrame == 0) {
-            if (opt == 'c')
-             animations[i].stored_area = storeeArea(window, animations[i].x, animations[i].y, 
-                                                            animations[i].width, animations[i].height);
-            else
-             animations[i].stored_area = storeArea(window, animations[i].x, animations[i].y, 
-                                                            animations[i].width, animations[i].height);
- 
-        }
-    }
-
-    for (int i = 0; i < *size; i++) {
-        printf("MAYBE START RECOVER ON CURRFRAME = %i\n", animations[i].currFrame);
-        if (animations[i].currFrame >= animations[i].frames) {
-
-            printf("TRYING TO RECOVER\n");
-            recoverArea(window, animations[i].stored_area, animations[i].x, animations[i].y, 
-                                                           animations[i].width, animations[i].height); 
-            printf("RECOVERED\n");
-
-            deleteAnimation(&animations, *size, i);
-            printf("DELETED\n");
-
-            *size -= 1;
-            i--;
-
-            continue;
-       }
-
-        renderFrameOnWindow(animations[i], animations[i].currFrame, window, animations[i].x, animations[i].y);
-        printf("FRAME RENDERED\n");
-        animations[i].currFrame++;
-        printf("CURR FRAME = %i\n", animations[i].currFrame);
-    }
+    *animations = realloc(*animations, sizeof(Animation) * size);
 
 }
 
@@ -1064,90 +1048,11 @@ int* addAnimation(Animation** animations, Animation animation)
 {
     static int size = 0;
     
-    printf("TRYING TO REALLOC MEMORY\n");
     *animations = realloc(*animations, sizeof(Animation) * (size + 1));
-    printf("Memory allocated\n");
 
-    printf("TRYING to ADD animation\n");
     *(*animations + size) = animation;
-    printf("ANIMATION ADDED\n");
 
     size++;
 
     return &size;
 }
-
-/*void main(void)
-{
-    Window window = createWindow(40, 20);
-
-    srand(time(NULL));
-    Animation salut = createSalutAnimation(0, 0, 'R');
-    Animation* animations = NULL;
-    char* rand_colors = "RBCY";
-    int* size;
-    while (true) {
-        int rand_num = rand() % 4;
-        if (rand_num == 1)
-            size = addAnimation(&animations, createSalutAnimation(rand() % 25, rand() % 10, rand_colors[rand() % 4]));
-
-        renderAnimationArrayOnWindow(animations, window, size);
-        renderWindow(window, 0);
-        usleep(salut.ms);
-    }
-
-
-
-}
-*/
-/*void main(void)
-{
-   Window window = createWindow(20, 20);
-
-    Cursor cursor;
-    initCursorOnWindow(&cursor, window, '0', 'w');
-    
-    Animation* animations;
-    Animation animation;
-
-    char input;
-    char vector;
-    int* size;
-    *size = 0;
-
-    renderCursor(cursor);
-    renderWindow(window, 1);
-
-    while (1) {
-        input = getch_unin();
-        
-        switch(input) {
-        
-            case '\033':
-                vector = getArrowVector();
-                break;
-
-            case '\n':
-                if (cursor.curr_x > 0 && cursor.curr_y > 0 && 
-                    cursor.curr_x < window.width - 1 && cursor.curr_y < window.height - 1) {
-                animation = createSplashAnimation(cursor.curr_x - 1, cursor.curr_y - 1);
-                size = addAnimation(&animations, animation); 
-                }
-                break;
-            default:
-                vector = '\0';
-                break;
-        
-        } 
-
-        if (vector != '\0') {
-            moveCursor(&cursor, vector, false);
-            usleep(99000);
-        }
-
-        renderAnimationArrayOnWindow(animations, window, size, cursor);
-        renderWindow(window, 0);
-        
-    }
-
-}]]]*/

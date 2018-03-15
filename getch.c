@@ -34,10 +34,10 @@ char getch_(int echo)
   return ch;
 }
 
-char _getch(int echo)
+char getchNoBuff()
 {
   char ch;
-  initTermios(echo);
+  initTermios(0);
   fd_set rfds;
   struct timeval tv;
   int retval;
@@ -65,11 +65,6 @@ char _getch(int echo)
 char getch(void) 
 {
   return getch_(0);
-}
-
-char getch_unin(void)
-{
-  return _getch(0);
 }
 
 /* Read 1 character with echo */

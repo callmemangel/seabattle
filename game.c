@@ -1,18 +1,21 @@
-#include "game.h"
-#include "cursor.h"
-#include "animation.h"
-#include "structs.h"
-#include "getch.h"
-#include "machine.h"
-#include "time.h"
-#include "window.h"
-#include "ships.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <time.h>
+
+#include "game.h"
+#include "player.h"
+#include "cursor.h"
+#include "animation.h"
+#include "structs.h"
+#include "getch.h"
+#include "machine.h"
+#include "textfield.h"
+#include "window.h"
+#include "ships.h"
 
 #define WINDOW_W 40 
 #define WINDOW_H 20 
@@ -39,45 +42,25 @@
 #define TEXTFIELD_PAD_X 15
 #define TEXTFIELD_PAD_Y 2
 
-void clearTextField(Window text_field)
-{
-    for (int i = 0; i < text_field.height; i++)
-        for (int j = 0; j < text_field.width; j++)
-            text_field.field[i][j] = ' ';
-
-}
-
-void printToTextField(Window text_field, const char* text, char color)
-{
-    clearTextField(text_field);
-    for (int i = 0; i < text_field.height; i++)
-        for (int j = 0; j < text_field.width; j++) {
-
-            if (i * text_field.height + j == strlen(text))
-                return;
-            text_field.field[i][j] = text[i * text_field.height + j];
-            text_field.color_map[i][j] = color;
-        }
-
-}
 
 
 void startGame(Player* player_1, Player* player_2)
 {
-    
    GameWindow window;
 
-   initGameField (&window);
+   initGameField(&window);
 
+   system("clear");
 
    while (true) {  
-        
+
        doShot(player_1, player_2, window);
 
        if (isWin(player_2 -> ships))
            break;
 
        doShot(player_2, player_1, window);
+
        if (isWin(player_1 -> ships))
            break;
    }
@@ -89,93 +72,6 @@ void startGame(Player* player_1, Player* player_2)
 
 }
 
-void setShipsLeft(int* ships_left)
-{
-    ships_left[0] = 4;
-    ships_left[1] = 3;
-    ships_left[2] = 2;
-    ships_left[3] = 1;
-}
-
-void renderWinnerWindow(Player player, Window window)
-{
-    for (int i = 0; i < window.height; i++)
-        for (int j = 0; j < window.width; j++) {
-            window.field[i][j] = ' ';
-            window.color_map[i][j] = ' ';
-        }
-    
-    Window textfield0 = createField(window, 11, 2, 15, 1);
-    Window textfield1 = createField(window, 17, 9, 15, 1);
-    Window textfield2 = createField(window, 13, 11, 15, 1);
-    Window textfield3 = createField(window, 8, 19, 24, 1);
-
-    Animation* animations = NULL;
-    int a = 0;
-    int* size = &a;
-
-
-    srand(time(NULL));
-    
-    char* rand_colors = "RCBY";
-
-    while(getch_unin() != '\n')
-    {
-        int rand_num = rand() % 3;
-        
-        if (rand_num == 1) {
-           size = addAnimation(&animations, createSalutAnimation(rand() % (window.width - 14), 
-                                                                 rand() % 10, rand_colors[rand() % 4]));
-        } 
-        renderAnimationArrayOnWindow(animations, window, size, 'c');
-
-        printToTextField(textfield0, "CONGRATULATIONS", 'R');
-        printToTextField(textfield1, player.name, 'W');
-        printToTextField(textfield2, "YOU R WINNER", 'W');
-        printToTextField(textfield3, "PRESS ENTER TO CONTINUE", 'w');
-        renderWindow(window, 0);
-        usleep(100000);
-
-    }
-
-    for (int i = 0; i < window.height; i++)
-        for (int j = 0; j < window.width; j++) {
-            window.field[i][j] = ' ';
-            window.color_map[i][j] = ' ';
-        }
- 
-}
-
-void updateShipsField(Window window, Cell** field, bool hide_ships)
-{
-    for (int i = 0; i < SIZE; i++) {             
-       for (int j = 0; j < SIZE; j++) {        
-                                          
-            Cell cell = field[i][j];
-
-            if (cell.ship_id != -1 && !cell.is_hitted && !hide_ships) {
-                window.field[i][j] = 'I';
-                window.color_map[i][j] = 'G';
-            }
-
-            else if (cell.ship_id != -1 && cell.is_hitted) {
-                window.field[i][j] = 'X';
-                window.color_map[i][j] = 'R';
-            }
-
-            else if (cell.is_hitted) {
-                window.field[i][j] = 'O';
-                window.color_map[i][j] = 'C';
-            }
-
-            else {
-                window.field[i][j] = '~';
-                window.color_map[i][j] = 'B';
-            }
-       }
-    }
-}
-
 void initGameField(GameWindow* window)
 {
     window -> root = createWindow(WINDOW_W, WINDOW_H);
@@ -184,180 +80,20 @@ void initGameField(GameWindow* window)
     window -> info_field  = createField(window -> root, SHIPS_IFN_PAD_X, SHIPS_IFN_PAD_Y, SHIPS_INF_W, SHIPS_INF_H);
     window -> text_field  = createField(window -> root, TEXTFIELD_PAD_X, TEXTFIELD_PAD_Y, TEXTFIELD_W, TEXTFIELD_H);
 
-
     window -> ships_field = initMapField(window -> game_field);
-
     window -> ships_left = initInfoField(window -> info_field);
 }
 
-
-Cell** storeField (Cell** field, Cell** tmp)
+void freeGameField(GameWindow field) 
 {
-    tmp = mallocField(tmp);
+    freeWindow(&field.root);
 
-    for (int i = 0; i < SIZE; i++)
-        for (int j = 0; j < SIZE; j++)
-            tmp[i][j] = field[i][j];
+    freeWindow(&field.game_field);
+    freeWindow(&field.info_field);
+    freeWindow(&field.text_field);
 
-    return tmp;
-}
-
-Cell** mallocField (Cell** field)
-{
-    field = malloc(sizeof(Cell*) * SIZE);
-
-    for (int i = 0; i < SIZE; i++)
-        field[i] = malloc(sizeof(Cell) * SIZE);
-
-    return field;
-}
-
-void updateShipsLeft(Window ships_left, int* ships)
-{
-    printf("TRYING TO RENEW VALUES\n");
-    printf("SHIPS[0] = %i\n", ships[0]);
-    printf("SHIPS[1] = %i\n", ships[1]);
-    printf("SHIPS[2] = %i\n", ships[2]);
-    printf("SHIPS[3] = %i\n", ships[3]);
-    renderWindow(ships_left, 1);
-    printf("WINDOW REnDeres\n");
-    sprintf(*(ships_left.field), "%3i%3i%3i%3i", ships[0], ships[1], ships[2], ships[3]);  
-    printf("RENEWED\n");
-
-    for (int i = 0; i < ships_left.width; i++)
-        if (ships_left.field[0][i] == '0')
-            ships_left.color_map[0][i] = 'G';
-        else
-            ships_left.color_map[0][i] = 'w';
-}
-
-char getCursorShipSet(Player player)
-{
-    Window window = createWindow(40, 20);
-
-    Window menu = createField(window, 14, 6, 14, 6);
-
-    Window yes_no = createField(menu, 0, 3, 1, 3);
-
-    sprintf(menu.field[0], "%s ship set", player.name);
-
-    sprintf(menu.field[3], ">  custom");
-    sprintf(menu.field[5], ">  auto  ");
-
-    Cursor cursor;
-    initCursorOnWindow(&cursor, yes_no, '>', 'G', 1, 1);
-
-    renderCursor(cursor);
-    renderWindow(window, 0);
-    
-    int position = 1;
-
-    while (true) {
-    
-        int input = listenInput();
-
-        char vector = '\0';
-
-        switch (input) {
-            
-           case '\033':
-              vector = getArrowVector();
-
-              if (vector == 'd' && position < 2) {
-                  moveCursor(&cursor, vector, false);
-                  moveCursor(&cursor, vector, false);
-                  position++;
-              }
-
-              else if (vector == 'u' && position > 1) {
-                  moveCursor(&cursor, vector, false);
-                  moveCursor(&cursor, vector, false);
-                  position--;
-              }
-              vector = '\0';
-
-              break;
-
-           case '\n':
-              if (position == 1) {
-                  freeCursor(cursor);
-                  return 'c';
-              }
-              else {
-                  freeCursor(cursor);
-                  return 'a';
-              }
-           
-               break;
-        }
-
-        renderWindow(window, 0);
-    }
-
-}
-char getCursorGameMode(void)
-{
-    Window window = createWindow(40, 20);
-
-    Window menu = createField(window, 11, 6, 14, 6);
-
-    Window yes_no = createField(menu, 0, 3, 1, 3);
-
-    sprintf(menu.field[0],   "choose gamemode");
-
-    sprintf(menu.field[3], ">  with machine");
-    sprintf(menu.field[5], ">  with human  ");
-
-    Cursor cursor;
-    initCursorOnWindow(&cursor, yes_no, '>', 'G', 1, 1);
-
-    renderCursor(cursor);
-    renderWindow(window, 0);
-    
-    int position = 1;
-
-    while (true) {
-    
-        int input = listenInput();
-
-        char vector = '\0';
-
-        switch (input) {
-            
-           case '\033':
-              vector = getArrowVector();
-
-              if (vector == 'd' && position < 2) {
-                  moveCursor(&cursor, vector, false);
-                  moveCursor(&cursor, vector, false);
-                  position++;
-              }
-
-              else if (vector == 'u' && position > 1) {
-                  moveCursor(&cursor, vector, false);
-                  moveCursor(&cursor, vector, false);
-                  position--;
-              }
-              vector = '\0';
-
-              break;
-
-           case '\n':
-              if (position == 1) {
-                  freeCursor(cursor);
-                  return 'm';
-              }
-              else {
-                  freeCursor(cursor);
-                  return 'p';
-              }
-           
-               break;
-        }
-
-        renderWindow(window, 0);
-    }
-
+    freeWindow(&field.ships_field);
+    freeWindow(&field.ships_left);
 }
 
 Window initMapField(Window game_field)
@@ -386,6 +122,7 @@ Window initMapField(Window game_field)
      }
 
      ships_field = createField(game_field, 1, 1, 10, 10);
+
      return ships_field;
 }
 
@@ -424,10 +161,8 @@ Window initInfoField(Window info_field)
     return ships_left;
 }
 
-
 void doShot (Player* player_1, Player* player_2, GameWindow window)
 {
-
     srand(time(NULL));
 
     bool hide_ships = true;
@@ -448,7 +183,6 @@ void doShot (Player* player_1, Player* player_2, GameWindow window)
                 shot = getShotAtPlayer(*player_2, window, 'a');
            else
                 shot = getShotAtPlayer(*player_2, window, 'c');
-
 
            if (player_2 -> field[shot[1]][shot[0]].is_hitted)
                continue;
@@ -495,7 +229,7 @@ void doShot (Player* player_1, Player* player_2, GameWindow window)
 
                     setEnvire(player_2 -> ships[shipId], player_2 -> field);
 
-                    delete(player_2 -> ships[shipId], player_2 -> ships_left);
+                    deleteShip(player_2 -> ships[shipId], player_2 -> ships_left);
 
                     updateShipsLeft(window.ships_left, player_2 -> ships_left);
 
@@ -509,7 +243,6 @@ void doShot (Player* player_1, Player* player_2, GameWindow window)
                usleep(SLEEP_TIME);
 
                continue;
-
            }
 
            printToTextField(window.text_field, "MISSED", 'C');
@@ -523,9 +256,7 @@ void doShot (Player* player_1, Player* player_2, GameWindow window)
            usleep(SLEEP_TIME);
 
            break;
-    
        }
-
 }
 
 int* getShotAtPlayer(Player player, GameWindow window, char shotMode) 
@@ -538,12 +269,10 @@ int* getShotAtPlayer(Player player, GameWindow window, char shotMode)
     }
     
     return shot;
-
 }
 
 int* getCursorShot(GameWindow window)
 {
-
     static int shot[2];
 
     Cursor cursor;
@@ -573,23 +302,218 @@ int* getCursorShot(GameWindow window)
 
             default:
                 vector = '\0';
-        
         } 
+
         if (vector != '\0')
-        moveCursor(&cursor, vector, false);
+            moveCursor(&cursor, vector);
+
         renderWindow(window.root, RENDER_OPT);
     }
-
-
 }
 
-int getShipId (int* shot, Cell** field)
+
+bool isWin (Ship* ships) 
 {
-    int x = shot[0];
-    int y = shot[1];
+    int count = 0;
 
-    return field[y][x].ship_id;
+    for (int i = 0; i < 10; i++)
+        if (ships[i].is_killed)
+            count++;
 
+    if (count == 10)
+        return true;
+    else
+        return false;
+}
+
+void renderWinnerWindow(Player player, Window window)
+{
+    for (int i = 0; i < window.height; i++) {
+        for (int j = 0; j < window.width; j++) {
+            window.field[i][j] = ' ';
+            window.color_map[i][j] = ' ';
+        }
+    }
+    
+    Window textfield0 = createField(window, 11, 2, 15, 1);
+    Window textfield1 = createField(window, 17, 9, 15, 1);
+    Window textfield2 = createField(window, 13, 11, 15, 1);
+    Window textfield3 = createField(window, 8, 19, 24, 1);
+
+    Animation* animations = NULL;
+    int a = 0;
+    int* size = &a;
+
+    srand(time(NULL));
+    
+    char* rand_colors = "RCBY";
+
+    while(getchNoBuff() != '\n')
+    {
+        int rand_num = rand() % 3;
+        
+        if (rand_num == 1) {
+           size = addAnimation(&animations, createSalutAnimation(rand() % (window.width - 14), 
+                                                                 rand() % 10, rand_colors[rand() % 4]));
+        } 
+        renderAnimationArrayOnWindow(animations, window, size, 'c');
+
+        printToTextField(textfield0, "CONGRATULATIONS", 'R');
+        printToTextField(textfield1, player.name, 'W');
+        printToTextField(textfield2, "YOU ARE WINNER", 'W');
+        printToTextField(textfield3, "PRESS ENTER TO CONTINUE", 'w');
+        renderWindow(window, 0);
+        usleep(100000);
+    }
+
+    for (int i = 0; i < window.height; i++) {
+        for (int j = 0; j < window.width; j++) {
+            window.field[i][j] = ' ';
+            window.color_map[i][j] = ' ';
+        }
+    }
+}
+
+void updateShipsField(Window window, Cell** field, bool hide_ships)
+{
+    for (int i = 0; i < SHIPS_FIELD_SIZE; i++) {             
+        for (int j = 0; j < SHIPS_FIELD_SIZE; j++) {        
+                                          
+            Cell cell = field[i][j];
+
+            if (cell.ship_id != -1 && !cell.is_hitted && !hide_ships) {
+                window.field[i][j] = 'I';
+                window.color_map[i][j] = 'G';
+            }
+
+            else if (cell.ship_id != -1 && cell.is_hitted) {
+                window.field[i][j] = 'X';
+                window.color_map[i][j] = 'R';
+            }
+
+            else if (cell.is_hitted) {
+                window.field[i][j] = 'O';
+                window.color_map[i][j] = 'C';
+            }
+
+            else {
+                window.field[i][j] = '~';
+                window.color_map[i][j] = 'B';
+            }
+        }
+    }
+}
+
+void updateShipsLeft(Window ships_left, int* ships) 
+{
+    renderWindow(ships_left, 1);
+    sprintf(*(ships_left.field), "%3i%3i%3i%3i", ships[0], ships[1], ships[2], ships[3]);  
+
+    for (int i = 0; i < ships_left.width; i++)
+        if (ships_left.field[0][i] == '0')
+            ships_left.color_map[0][i] = 'G';
+        else
+            ships_left.color_map[0][i] = 'w';
+}
+
+Cell** storeField (Cell** field, Cell** tmp)
+{
+    tmp = mallocField(tmp);
+
+    for (int i = 0; i < SHIPS_FIELD_SIZE; i++)
+        for (int j = 0; j < SHIPS_FIELD_SIZE; j++)
+            tmp[i][j] = field[i][j];
+
+    return tmp;
+}
+
+Cell** mallocField (Cell** field)
+{
+    field = malloc(sizeof(Cell*) * SHIPS_FIELD_SIZE);
+
+    for (int i = 0; i < SHIPS_FIELD_SIZE; i++)
+        field[i] = malloc(sizeof(Cell) * SHIPS_FIELD_SIZE);
+
+    return field;
+}
+
+void freeField(Cell** field) {
+    for (int i = 0; i < SHIPS_FIELD_SIZE; i++) {
+        free(field[i]);
+    }
+
+    free(field);
+}
+
+
+char getCursorGameMode(void)
+{
+    system("clear");
+
+    Window window = createWindow(40, 20);
+
+    Window menu = createField(window, 11, 6, 14, 6);
+
+    Window yes_no = createField(menu, 0, 3, 1, 3);
+
+    sprintf(menu.field[0],   "choose gamemode");
+
+    sprintf(menu.field[3], ">  with machine");
+    sprintf(menu.field[5], ">  with human  ");
+
+    Cursor cursor;
+    initCursorOnWindow(&cursor, yes_no, '>', 'G', 1, 1);
+
+    renderCursor(cursor);
+    renderWindow(window, 0);
+    
+    int position = 1;
+    char game_mode;
+
+    while (true) {
+    
+        int input = listenInput();
+
+        char vector = '\0';
+
+        switch (input) {
+            
+           case '\033':
+              vector = getArrowVector();
+
+              if (vector == 'd' && position < 2) {
+                  moveCursor(&cursor, vector);
+                  moveCursor(&cursor, vector);
+                  position++;
+              }
+
+              else if (vector == 'u' && position > 1) {
+                  moveCursor(&cursor, vector);
+                  moveCursor(&cursor, vector);
+                  position--;
+              }
+              vector = '\0';
+
+              break;
+
+           case '\n':
+              if (position == 1) {
+                  freeCursor(cursor);
+                  game_mode = 'm';
+              }
+              else {
+                  freeCursor(cursor);
+                  game_mode = 'p';
+              }
+
+              freeWindow(&window);
+
+              return game_mode;
+           
+              break;
+        }
+        renderWindow(window, 0);
+    }
 }
 
 //void reset(void)
@@ -604,87 +528,6 @@ int getShipId (int* shot, Cell** field)
 
 //}
 
-bool isHit (int* shot, Cell** field)
-{
-    int x = shot[0];
-    int y = shot[1];
-
-    if (field[y][x].ship_id != -1)
-        return true;
-
-    return false;
-
-}
-
-bool isKilled(const int id, Ship* ships)
-{
-    Ship ship = ships[id];
-
-    int size = ship.size;
-
-    int hitted_cells = 0;
-
-    for (int i = 0; i < size; i++) 
-        if (ship.cells[i] -> is_hitted)
-            hitted_cells++;
-
-    if (size == hitted_cells)
-        return true;
-
-    return false;
-
-}
-
-
-void getPlayerName(Player* player)
-{
-    static int count = 0;
-
-    system("clear");
-
-    if (player -> is_machine) {
-        strcpy(player -> name, "Jasper");
-        system("clear");
-        return;
-    }
-
-    if (count == 0) {
-        printf("\n\n\n\n\n\n\n\n\n\n\033[2m                        Player name #1: ");
-    }
-    else {
-        printf("\n\n\n\n\n\n\n\n\n\n\033[2m                        Player name #2: ");
-    }
-
-    fgets(player -> name, NAME_LENGTH, stdin);
-
-    player -> name[strlen(player -> name) - 1] = '\0';
-
-    printf("\033[0m");
-    system("clear");
-
-    count++;
-
-}
-
-char getGameMode(void)
-{
-    char gameMode;
-
-    do {
-        printf("CHOOSE GAMEMODE\n"
-               "p - PLAYER VS PLAYER\n" 
-               "m - PLAYER VS MACHINE\n");
-
-        gameMode = getchar();
-        if (gameMode != '\n')
-            clearBuff(); 
-
-   } while (gameMode != 'p' && gameMode != 'm');
-
-   return gameMode;
-}
-
-
 bool wannaRepeat(void)
 {
     char answ;
@@ -693,7 +536,7 @@ bool wannaRepeat(void)
 
     do {
         answ = getchar();
-        clearBuff(); 
+        clearInputBuff(); 
     } while (answ != 'y' && answ != 'n' && answ != 'Y' && answ != 'N');
 
     if (answ == 'y' || answ == 'Y')
@@ -702,92 +545,7 @@ bool wannaRepeat(void)
         return false;
 }
 
-void initCells (Cell** field)
-{
-    for (int i = 0; i < SIZE; i++)
-        for (int j = 0; j < SIZE; j++)
-        {
-            field[i][j].x = j;
-            field[i][j].y = i;
-            field[i][j].is_hitted = false;
-            field[i][j].ship_id = -1;
-        }
-}
-
-bool isWin (Ship* ships) {
-
-    int count = 0;
-
-    for (int i = 0; i < 10; i++)
-        if (ships[i].is_killed)
-            count++;
-
-    if (count == 10)
-        return true;
-
-    else
-        return false;
-
-}
-
-int* getUserShot() 
-{
-    static int shot[2];
-
-    do {
-
-        printf("Your Coords: ");
-
-        int x = toupper(getchar()) - 65;
-        int y = getchar() - '0';
-
-        if (y != '\n') 
-            clearBuff();
-
-        shot[0] = x;
-        shot[1] = y;
-
-    } while (!validCoords(shot, 2));
-
-    return shot;
-
-}
-
-void clearBuff(void) 
+void clearInputBuff(void) 
 {
     while(getchar() != '\n');
 }
-
-void setEnvire(Ship ship, Cell** field)
-{
-    int* setArea = createSetArea(ship);
-
-    for (int i = setArea[1]; i <= setArea[3]; i++) {
-
-        for (int j = setArea[0]; j <= setArea[2]; j++) {
-
-            if (i < 0 || j < 0 || i > 9 || j > 9){
-               continue;
-            }
-            
-            field[i][j].is_hitted = true; 
-
-        }
-            
-    }
-
-}
-
-int* createSetArea(Ship ship)
-{
-    static int setArea[4];
-
-    setArea[0] = ship.cells[0] -> x - 1;
-    setArea[1] = ship.cells[0] -> y - 1;
-    setArea[2] = ship.cells[ship.size - 1] -> x + 1;
-    setArea[3] = ship.cells[ship.size - 1] -> y + 1;
-
-    return setArea;
-
-}
-

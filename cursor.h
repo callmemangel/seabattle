@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include "window.h"
-#include "stack.h"
 
 typedef struct {
 
@@ -15,8 +14,6 @@ typedef struct {
 
     char* stored_values;
     char* stored_colors;
-
-    Buffer drawCoords;
 
     Window window;
 
@@ -39,7 +36,7 @@ void storeBeforeRender(Cursor* cursor);
 
 void recoverStoredArea(const Cursor cursor);
 
-void moveCursor(Cursor* cursor, char vector, bool start_draw);
+void moveCursor(Cursor* cursor, char vector);
 
 void initCursorOnWindow(Cursor* cursor, const Window window, const char curs_sign, const char curs_color, int width, int height);
 
