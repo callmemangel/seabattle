@@ -10,4 +10,4 @@ $(OBJS): %.o: %.c $(HDRS)
 	gcc -O3 -c -o $@ $< 
 
 clean: 
-	rm -rf *.o 
+	rm -rf src/*.o 
